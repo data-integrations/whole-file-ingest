@@ -1,0 +1,102 @@
+{
+  "metadata": {
+    "spec-version": "1.4"
+  },
+  "configuration-groups": [
+    {
+      "label": "Required Options",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Amazon S3 Client Action",
+          "name": "action",
+          "widget-attributes": {
+            "values": [
+              "Copy Object",
+              "Create Bucket",
+              "Delete Bucket"
+            ],
+            "default": "Copy Object"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "AWS Access Key Id",
+          "name": "accessKeyId"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "AWS Secret Key Id",
+          "name": "secretKeyId"
+        },
+        {
+          "widget-type": "select",
+          "label": "Amazon Region",
+          "name": "region",
+          "widget-attributes": {
+            "values": [
+              "us-gov-west-1",
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-central-1",
+              "ap-south-1",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "sa-east-1",
+              "cn-north-1",
+              "ca-central-1"
+            ],
+            "default": "us-east-1"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Copy Object Options",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Source Bucket Name",
+          "name": "sourceBucketName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Source Object Key",
+          "name": "sourceObjectKey"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Destination Bucket Name",
+          "name": "destBucketName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Destination Object Key",
+          "name": "destObjectKey"
+        }
+      ]
+    },
+    {
+      "label": "Create / Delete Bucket Options",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Bucket Name to Create or Delete",
+          "name": "bucketName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Macro Name for New Bucket Name",
+          "name": "newBucketMacroLoc"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
