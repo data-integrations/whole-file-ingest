@@ -30,7 +30,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class AbstractMetadataInputSplitTest {
+public class MetadataInputSplitTest {
   @Test
   public void testSerializeAndDeserialize() throws Exception {
     // required for abstract metadata

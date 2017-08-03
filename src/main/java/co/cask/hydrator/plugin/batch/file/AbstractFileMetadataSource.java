@@ -26,19 +26,20 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.common.ReferenceBatchSource;
 import co.cask.hydrator.plugin.common.ReferencePluginConfig;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 
 /**
  * Abstract class for FileCopySource plugin. Extracts metadata of desired files
  * from the source database.
- * @param <K> the FileMetadata class specific to each database.
+ * @param <K> the FileMetadata class specific to each filesystem.
  */
-public abstract class AbstractFileMetadataSource<K extends AbstractFileMetadata>
+public abstract class AbstractFileMetadataSource<K extends FileMetadata>
   extends ReferenceBatchSource<NullWritable, K, StructuredRecord> {
 
   private final AbstractFileMetadataSourceConfig config;
 
-  public AbstractFileMetadataSource(AbstractFileMetadataSourceConfig config) {
+  protected AbstractFileMetadataSource(AbstractFileMetadataSourceConfig config) {
     super(config);
     this.config = config;
   }
@@ -85,19 +86,14 @@ public abstract class AbstractFileMetadataSource<K extends AbstractFileMetadata>
     @Description("The number of files each split reads in")
     public Integer maxSplitSize;
 
-    @Macro
-    @Description("The URI of the filesystem")
-    public String filesystemURI;
-
     @Description("Whether or not to copy recursively")
     public Boolean recursiveCopy;
 
     public AbstractFileMetadataSourceConfig(String name, String sourcePaths,
-                                            Integer maxSplitSize, String filesystemURI) {
+                                            Integer maxSplitSize) {
       super(name);
       this.sourcePaths = sourcePaths;
       this.maxSplitSize = maxSplitSize;
-      this.filesystemURI = filesystemURI;
     }
 
     public void validate() {
@@ -107,6 +103,17 @@ public abstract class AbstractFileMetadataSource<K extends AbstractFileMetadata>
         }
       }
     }
+  }
+
+  /**
+   * This method initializes the configuration instance with fields that are shared by all plugins.
+   *
+   * @param conf The configuration we wish to initialize.
+   */
+  protected void setDefaultConf(Configuration conf) {
+    MetadataInputFormat.setSourcePaths(conf, config.sourcePaths);
+    MetadataInputFormat.setMaxSplitSize(conf, config.maxSplitSize);
+    MetadataInputFormat.setRecursiveCopy(conf, config.recursiveCopy.toString());
   }
 
     /*

@@ -25,7 +25,6 @@ import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.batch.file.AbstractFileMetadataSource;
@@ -61,31 +60,27 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
 
-    S3MetadataInputFormat.setSourcePaths(conf, config.sourcePaths);
-    S3MetadataInputFormat.setMaxSplitSize(conf, config.maxSplitSize);
-    S3MetadataInputFormat.setRecursiveCopy(conf, config.recursiveCopy.toString());
+    // initialize configuration
+    setDefaultConf(conf);
     S3MetadataInputFormat.setRegion(conf, config.region);
     S3MetadataInputFormat.setURI(conf, config.filesystemURI);
-
     String fsScheme = URI.create(config.filesystemURI).getScheme();
-    if (fsScheme.equals("s3a")) {
-      S3MetadataInputFormat.setS3aAccessKeyId(conf, config.accessKeyId);
-      S3MetadataInputFormat.setS3aSecretKeyId(conf, config.secretKeyId);
-      S3MetadataInputFormat.setS3aFsClass(conf);
-    } else if (fsScheme.equals("s3n")) {
-      S3MetadataInputFormat.setS3nAccessKeyId(conf, config.accessKeyId);
-      S3MetadataInputFormat.setS3nSecretKeyId(conf, config.secretKeyId);
-      S3MetadataInputFormat.setS3nFsClass(conf);
-    } else {
-      throw new IllegalArgumentException("Scheme must be either s3a or s3n.");
+    switch (fsScheme) {
+      case "s3a" :
+        S3MetadataInputFormat.setS3aAccessKeyId(conf, config.accessKeyId);
+        S3MetadataInputFormat.setS3aSecretKeyId(conf, config.secretKeyId);
+        S3MetadataInputFormat.setS3aFsClass(conf);
+        break;
+      case "s3n" :
+        S3MetadataInputFormat.setS3nAccessKeyId(conf, config.accessKeyId);
+        S3MetadataInputFormat.setS3nSecretKeyId(conf, config.secretKeyId);
+        S3MetadataInputFormat.setS3nFsClass(conf);
+        break;
+      default:
+        throw new IllegalArgumentException("Scheme must be either s3a or s3n.");
     }
 
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(S3MetadataInputFormat.class, conf)));
-  }
-
-  @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
   }
 
   @Override
@@ -94,11 +89,15 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
   }
 
   /**
-   * AbstractCredentials required for connecting to S3Filesystem.
+   * Configurations required for connecting to S3Filesystem.
    */
   public class S3FileMetadataSourceConfig extends AbstractFileMetadataSourceConfig {
 
     // configurations for S3
+    @Macro
+    @Description("The URI of the filesystem")
+    public String filesystemURI;
+
     @Macro
     @Description("Your AWS Access Key Id")
     public String accessKeyId;
@@ -112,9 +111,11 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
     @Description("The AWS Region to operate in")
     public String region;
 
-    public S3FileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize, String filesystemURI,
-                                      String accessKeyId, String secretKeyId, String region) {
-      super(name, sourcePaths, maxSplitSize, filesystemURI);
+    public S3FileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize,
+                                      String filesystemURI, String accessKeyId,
+                                      String secretKeyId, String region) {
+      super(name, sourcePaths, maxSplitSize);
+      this.filesystemURI = filesystemURI;
       this.accessKeyId = accessKeyId;
       this.secretKeyId = secretKeyId;
       this.region = region;

@@ -28,7 +28,6 @@ import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
 import co.cask.hydrator.plugin.common.ReferenceBatchSink;
 import co.cask.hydrator.plugin.common.ReferencePluginConfig;
-import com.sun.istack.Nullable;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,17 +35,18 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Abstract template for a FileCopySink. The transform method converts a structured record
- * to AbstractFileMetadata class.
+ * to FileMetadata class.
  */
 public abstract class AbstractFileCopySink
-  extends ReferenceBatchSink<StructuredRecord, NullWritable, AbstractFileMetadata> {
+  extends ReferenceBatchSink<StructuredRecord, NullWritable, FileMetadata> {
   protected final AbstractFileCopySinkConfig config;
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFileCopySink.class);
 
-  public AbstractFileCopySink(AbstractFileCopySinkConfig config) {
+  protected AbstractFileCopySink(AbstractFileCopySinkConfig config) {
     super(config);
     this.config = config;
   }
@@ -58,7 +58,7 @@ public abstract class AbstractFileCopySink
   }
 
   /**
-   * Converts input StructuredRecord to AbstractFileMetadata class. Loads credentials and
+   * Converts input StructuredRecord to FileMetadata class. Loads credentials and
    * file metadata from the input.
    * @param input The input structured record that contains credentials and file metadata.
    * @param emitter
@@ -66,21 +66,23 @@ public abstract class AbstractFileCopySink
    */
   @Override
   public void transform(StructuredRecord input,
-                        Emitter<KeyValue<NullWritable, AbstractFileMetadata>> emitter)
+                        Emitter<KeyValue<NullWritable, FileMetadata>> emitter)
     throws Exception {
-    AbstractFileMetadata output;
-    String fsScheme = URI.create((String) input.get(AbstractFileMetadata.HOST_URI)).getScheme();
+    FileMetadata output;
+    String fsScheme = URI.create((String) input.get(FileMetadata.HOST_URI)).getScheme();
     switch (fsScheme) {
       case "s3n" :
       case "s3a" :
         output = new S3FileMetadata(input);
         break;
-
+      case "file" :
+      case "hdfs" :
+        output = new FileMetadata(input);
+        break;
       default:
         throw new IllegalArgumentException(fsScheme + "is not supported.");
-
     }
-    emitter.emit(new KeyValue<NullWritable, AbstractFileMetadata>(null, output));
+    emitter.emit(new KeyValue<NullWritable, FileMetadata>(null, output));
   }
 
   @Override
@@ -93,6 +95,7 @@ public abstract class AbstractFileCopySink
    * Abstract class for the configuration of FileCopySink
    */
   public abstract class AbstractFileCopySinkConfig extends ReferencePluginConfig {
+
     @Macro
     @Description("The destination path. Will be created if it doesn't exist.")
     public String basePath;
@@ -103,7 +106,6 @@ public abstract class AbstractFileCopySink
     @Description("Whether or not to preserve the owner of the file from source filesystem.")
     public Boolean preserveFileOwner;
 
-    // TODO: figure out why this still shows up as required in configuration UI
     @Macro
     @Nullable
     @Description("The size of the buffer (in MB) that temporarily stores data from file input stream. Defaults to" +
@@ -121,8 +123,11 @@ public abstract class AbstractFileCopySink
 
     public void validate() {
       if (!this.containsMacro("bufferSize")) {
-        if (bufferSize <= 0) {
-          throw new IllegalArgumentException("Buffer size must be a positive integer.");
+        // check if it's null since buffersize isn't a required field
+        if (bufferSize != null) {
+          if (bufferSize <= 0) {
+            throw new IllegalArgumentException("Buffer size must be a positive integer.");
+          }
         }
       }
     }
@@ -132,15 +137,13 @@ public abstract class AbstractFileCopySink
      */
 
     public abstract String getScheme();
-
-    public abstract String getHostUri();
   }
 
   /**
    * Adds necessary configuration resources and provides OutputFormat Class
    */
   public class FileCopyOutputFormatProvider implements OutputFormatProvider {
-    private final Map<String, String> conf;
+    protected final Map<String, String> conf;
 
     public FileCopyOutputFormatProvider(AbstractFileCopySink.AbstractFileCopySinkConfig config) {
       this.conf = new HashMap<>();
@@ -154,11 +157,6 @@ public abstract class AbstractFileCopySink
         FileCopyOutputFormat.setBufferSize(conf, String.valueOf(config.bufferSize << 20));
       } else {
         FileCopyOutputFormat.setBufferSize(conf, String.valueOf(FileCopyRecordWriter.DEFAULT_BUFFER_SIZE));
-      }
-
-      // set the URI for the destination filesystem if it's provided
-      if (config.getHostUri() != null) {
-        FileCopyOutputFormat.setFilesystemHostUri(conf, config.getHostUri());
       }
     }
 

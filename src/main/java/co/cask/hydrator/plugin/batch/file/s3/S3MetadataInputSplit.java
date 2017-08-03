@@ -16,28 +16,22 @@
 
 package co.cask.hydrator.plugin.batch.file.s3;
 
-import co.cask.hydrator.plugin.batch.file.AbstractFileMetadata;
-import co.cask.hydrator.plugin.batch.file.AbstractMetadataInputSplit;
+import co.cask.hydrator.plugin.batch.file.FileMetadata;
+import co.cask.hydrator.plugin.batch.file.MetadataInputSplit;
 
 import java.io.DataInput;
 import java.io.IOException;
-import java.util.List;
-
 
 /**
  * InputSplit that implements methods for serializing S3 AbstractCredentials
  */
-public class S3MetadataInputSplit extends AbstractMetadataInputSplit {
-  public S3MetadataInputSplit(List<AbstractFileMetadata> s3FileMetadataList) {
-    super(s3FileMetadataList);
-  }
-
+public class S3MetadataInputSplit extends MetadataInputSplit {
   public S3MetadataInputSplit() {
     super();
   }
 
   @Override
-  protected AbstractFileMetadata readFileMetaData(DataInput dataInput) throws IOException {
+  protected FileMetadata readFileMetaData(DataInput dataInput) throws IOException {
     return new S3FileMetadata(dataInput);
   }
 }

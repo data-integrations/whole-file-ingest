@@ -35,7 +35,7 @@ import java.util.List;
  * Abstract class that contains file metadata fields.
  * Extend from this class to add credentials specific to different filesystems.
  */
-public abstract class AbstractFileMetadata implements Comparable {
+public class FileMetadata implements Comparable {
 
   public static final String FILE_NAME = "fileName";
   public static final String FILE_SIZE = "fileSize";
@@ -48,6 +48,7 @@ public abstract class AbstractFileMetadata implements Comparable {
   public static final String PERMISSION = "permission";
   public static final String HOST_URI = "hostURI";
 
+  // The default schema that will be used to convert this object to a StructuredRecord.
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "metadata",
     Schema.Field.of(FILE_NAME, Schema.of(Schema.Type.STRING)),
@@ -105,9 +106,17 @@ public abstract class AbstractFileMetadata implements Comparable {
    */
   private final String hostURI;
 
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractFileMetadata.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FileMetadata.class);
 
-  protected AbstractFileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
+  /**
+   * Constructs a FileMetadata instance given a FileStatus and source path. Override this method to add additional
+   * credential fields to the instance.
+   *
+   * @param fileStatus The FileStatus object that contains raw file metadata for this object.
+   * @param sourcePath The user specified path that was used to obtain this file.
+   * @throws IOException
+   */
+  public FileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
     fileName = fileStatus.getPath().getName();
     fullPath = fileStatus.getPath().toUri().getPath();
     isFolder = fileStatus.isDirectory();
@@ -126,14 +135,20 @@ public abstract class AbstractFileMetadata implements Comparable {
 
     // construct host URI given the full path from filestatus
     try {
-      hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(), null, null)
-        .toString();
+      hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(),
+                        Path.SEPARATOR, null).toString();
     } catch (URISyntaxException e) {
       throw new IOException(e.getMessage());
     }
   }
 
-  protected AbstractFileMetadata(StructuredRecord record) {
+  /**
+   * Use this constructor to construct a FileMetadata from a StructuredRecord. Override this method if additional
+   * credentials are contained in the structured record.
+   *
+   * @param record The StructuredRecord instance to convert from.
+   */
+  public FileMetadata(StructuredRecord record) {
     this.fileName = record.get(FILE_NAME);
     this.fullPath = record.get(FULL_PATH);
     this.modificationTime = record.get(MODIFICATION_TIME);
@@ -147,10 +162,11 @@ public abstract class AbstractFileMetadata implements Comparable {
   }
 
   /**
-   * use this constructor to deserialize from DataInput
-   * @param dataInput
+   * Use this constructor to deserialize from an input stream.
+   *
+   * @param dataInput The input stream to deserialize from.
    */
-  protected AbstractFileMetadata(DataInput dataInput) throws IOException {
+  public FileMetadata(DataInput dataInput) throws IOException {
     this.fileName = dataInput.readUTF();
     this.fullPath = dataInput.readUTF();
     this.modificationTime = dataInput.readLong();
@@ -204,14 +220,21 @@ public abstract class AbstractFileMetadata implements Comparable {
   }
 
   /**
-   * Converts to StructuredRecord
+   * Converts to a StructuredRecord
    */
   public StructuredRecord toRecord() {
+    // initialize credential schema
+    List<Schema.Field> credentialSchemaList;
+    if (getCredentialSchema() == null) {
+      credentialSchemaList = new ArrayList<>();
+    } else {
+      credentialSchemaList = getCredentialSchema().getFields();
+    }
 
-    // initialize output schema
+    // merge default schema and credential schema to create output schema
     Schema outputSchema;
     List<Schema.Field> fieldList = new ArrayList<>(DEFAULT_SCHEMA.getFields());
-    fieldList.addAll(getCredentialSchema().getFields());
+    fieldList.addAll(credentialSchemaList);
     outputSchema = Schema.recordOf("metadata", fieldList);
 
     StructuredRecord.Builder outputBuilder = StructuredRecord.builder(outputSchema)
@@ -230,9 +253,17 @@ public abstract class AbstractFileMetadata implements Comparable {
     return outputBuilder.build();
   }
 
+  /**
+   * Compares the size of two files
+   *
+   * @param o The other file to compare to
+   * @return 1 if this instance is larger than the other file.
+   *         0 if this instance has the same size as the other file.
+   *        -1 if this instance is smaller than the other file.
+   */
   @Override
   public int compareTo(Object o) {
-    return Long.compare(fileSize, ((AbstractFileMetadata) o).getFileSize());
+    return Long.compare(fileSize, ((FileMetadata) o).getFileSize());
   }
 
   public void write(DataOutput dataOutput) throws IOException {
@@ -249,9 +280,18 @@ public abstract class AbstractFileMetadata implements Comparable {
   }
 
   /**
+   * Override this in extended class to return credential schema for different filesystems.
    * @return Credential schema for different filesystems
    */
-  protected abstract Schema getCredentialSchema();
+  protected Schema getCredentialSchema() {
+    return null;
+  }
 
-  protected abstract void addCredentialsToBuilder(StructuredRecord.Builder builder);
+  /**
+   * Override this in extended class to add credential information to StructuredRecord.
+   * @param builder
+   */
+  protected void addCredentialsToBuilder(StructuredRecord.Builder builder) {
+
+  }
 }

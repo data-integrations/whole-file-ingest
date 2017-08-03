@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.file.s3;
 
-import co.cask.hydrator.plugin.batch.file.AbstractFileMetadata;
-import co.cask.hydrator.plugin.batch.file.AbstractMetadataInputFormat;
-import co.cask.hydrator.plugin.batch.file.AbstractMetadataInputSplit;
+import co.cask.hydrator.plugin.batch.file.FileMetadata;
+import co.cask.hydrator.plugin.batch.file.MetadataInputFormat;
+import co.cask.hydrator.plugin.batch.file.MetadataInputSplit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
@@ -32,7 +32,7 @@ import java.io.IOException;
  * MetadataInputFormat for S3 Filesystem. Implements credentials setters
  * specific for S3
  */
-public class S3MetadataInputFormat extends AbstractMetadataInputFormat {
+public class S3MetadataInputFormat extends MetadataInputFormat {
 
   // configs for s3a
   public static final String S3A_ACCESS_KEY_ID = "fs.s3a.access.key";
@@ -77,12 +77,12 @@ public class S3MetadataInputFormat extends AbstractMetadataInputFormat {
   }
 
   @Override
-  protected AbstractMetadataInputSplit getInputSplit() {
+  protected MetadataInputSplit getInputSplit() {
     return new S3MetadataInputSplit();
   }
 
   @Override
-  protected AbstractFileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
+  protected FileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
     throws IOException {
     switch (fileStatus.getPath().toUri().getScheme()) {
       case "s3a":

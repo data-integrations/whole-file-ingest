@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class AbstractFileMetadataTest {
+public class FileMetadataTest {
   @Test
   public void testConvertFileStatusToFileMetaData() throws IOException {
     FileStatus fileStatus = new FileStatus();
@@ -37,7 +37,7 @@ public class AbstractFileMetadataTest {
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getRelativePath(), "directory/123.txt");
-    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
+    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket/");
 
     // Copy a file that is part of a whole directory copy without including the directory
     sourcePath = "/source/path/";
@@ -45,7 +45,7 @@ public class AbstractFileMetadataTest {
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getRelativePath(), "directory/123.txt");
-    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
+    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket/");
 
     fileStatus.setPath(new Path("s3a://abc.def.bucket/"));
     sourcePath = "/";

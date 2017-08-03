@@ -4,12 +4,17 @@
   },
   "configuration-groups": [
     {
-      "label": "HDFS File Copy Sink",
+      "label": "S3 File Copy Sink",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
           "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "URI",
+          "name": "filesystemURI"
         },
         {
           "widget-type": "textbox",
@@ -45,6 +50,42 @@
           "label": "Buffer Size (MB)",
           "name": "bufferSize",
           "default": "1"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Access Key ID",
+          "name": "accessKeyId"
+        },
+        {
+          "widget-type": "password",
+          "label": "Secret Key ID",
+          "name": "secretKeyId"
+        },
+        {
+          "widget-type": "select",
+          "label": "Amazon Region",
+          "name": "region",
+          "widget-attributes": {
+            "values": [
+              "us-gov-west-1",
+              "us-east-1",
+              "us-east-2",
+              "us-west-1",
+              "us-west-2",
+              "eu-west-1",
+              "eu-west-2",
+              "eu-central-1",
+              "ap-south-1",
+              "ap-southeast-1",
+              "ap-southeast-2",
+              "ap-northeast-1",
+              "ap-northeast-2",
+              "sa-east-1",
+              "cn-north-1",
+              "ca-central-1"
+            ],
+            "default": "us-east-1"
+          }
         }
       ]
     }
