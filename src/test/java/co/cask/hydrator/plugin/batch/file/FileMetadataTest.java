@@ -16,8 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.file;
 
-
-import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;

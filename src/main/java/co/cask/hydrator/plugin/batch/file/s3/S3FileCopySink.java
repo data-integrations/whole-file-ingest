@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
 
 import java.net.URI;
-import javax.annotation.Nullable;
 
 /**
  * FileCopySink that writes to S3.
