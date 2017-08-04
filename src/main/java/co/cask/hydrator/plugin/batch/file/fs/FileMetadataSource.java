@@ -14,15 +14,17 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.file.hdfs;
+package co.cask.hydrator.plugin.batch.file.fs;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.batch.file.AbstractFileMetadataSource;
@@ -36,19 +38,28 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FileCopySource plugin that pulls filemetadata from local filesystem or local HDFS.
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
-@Name("LocalFileMetadataSource")
+@Name("FileMetadataSource")
 @Description("Reads file metadata from local filesystem or local HDFS.")
-public class LocalFileMetadataSource extends AbstractFileMetadataSource<FileMetadata> {
-  private LocalFileMetadataSourceConfig config;
+public class FileMetadataSource extends AbstractFileMetadataSource<FileMetadata> {
+  private FileMetadataSourceConfig config;
 
-  public LocalFileMetadataSource(LocalFileMetadataSourceConfig config) {
+  public FileMetadataSource(FileMetadataSourceConfig config) {
     super(config);
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    List<Schema.Field> fieldList = new ArrayList<>(FileMetadata.DEFAULT_SCHEMA.getFields());
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.recordOf("fileSchema", fieldList));
   }
 
   @Override
@@ -59,9 +70,9 @@ public class LocalFileMetadataSource extends AbstractFileMetadataSource<FileMeta
 
     // initialize configurations
     setDefaultConf(conf);
-    switch (config.localScheme) {
+    switch (config.scheme) {
       case "file" :
-        MetadataInputFormat.setURI(conf, new URI(config.localScheme, null, Path.SEPARATOR, null).toString());
+        MetadataInputFormat.setURI(conf, new URI(config.scheme, null, Path.SEPARATOR, null).toString());
         break;
       case "hdfs" :
         break;
@@ -86,14 +97,14 @@ public class LocalFileMetadataSource extends AbstractFileMetadataSource<FileMeta
   /**
    * Configurations required for connecting to local filesystems.
    */
-  public class LocalFileMetadataSourceConfig extends AbstractFileMetadataSourceConfig {
+  public class FileMetadataSourceConfig extends AbstractFileMetadataSourceConfig {
 
     @Description("Scheme of the source filesystem.")
-    public String localScheme;
+    public String scheme;
 
-    public LocalFileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize, String localScheme) {
+    public FileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize, String scheme) {
       super(name, sourcePaths, maxSplitSize);
-      this.localScheme = localScheme;
+      this.scheme = scheme;
     }
   }
 }

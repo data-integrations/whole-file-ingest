@@ -1,8 +1,8 @@
-# Local File Metadata Batch Source
+# File Metadata Batch Source
 
 Description
 -----------
-The Local File Metadata plugin is a source plugin that allows users to read file metadata from a local HDFS or a local filesystem.
+The File Metadata plugin is a source plugin that allows users to read file metadata from a local HDFS or a local filesystem.
 
 
 Use Case
@@ -30,12 +30,12 @@ A StructuredRecord with the following schema is emitted for each file it reads.
 | :--------------------- | :----- | :-------------------------                                                                                                                     |
 | **fileName**           | String | Only contains the name of the file.                                                                                                            |
 | **fullPath**           | String | Contains the full path of the file in the source file system.                                                                                  |
-| **fileSize**           | long   | File Szie in bytes.                                                                                                                            |
+| **fileSize**           | long   | File size in bytes.                                                                                                                            |
 | **hostURI**            | String | The source filesystem's URI.                                                                                                                   |
 | **modificationTime**   | long   | The modification timestamp of the file.                                                                                                        |
 | **group**              | String | The group that the file belongs to.                                                                                                            |
 | **owner**              | String | The owner of the file.                                                                                                                         |
-| **isFolder**           | Boolean| Whether or not the file is a folder.                                                                                                           |
+| **isDir**              | Boolean| Whether or not the file is a directory.                                                                                                        |
 | **relativePath**       | String | The relative path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
 | **permission**         | int    | The file's access permission                                                                                                                   |
 

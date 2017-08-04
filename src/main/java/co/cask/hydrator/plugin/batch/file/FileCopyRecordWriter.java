@@ -115,8 +115,8 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, FileMetadat
     FileSystem sourceFilesystem = sourceFilesystemMap.get(uriString);
 
     // do some checks to see if we need to copy the file
-    if (fileMetadata.isFolder()) {
-      // create an empty folder and return
+    if (fileMetadata.isDir()) {
+      // create an empty directory and return
       if (!destFileSystem.exists(destPath) && sourceFilesystem.isDirectory(srcPath)) {
         destFileSystem.mkdirs(destPath, permission);
         if (preserveOwner) {

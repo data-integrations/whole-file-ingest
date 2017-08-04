@@ -27,34 +27,34 @@ import java.io.IOException;
 
 public class FileMetadataTest {
   @Test
-  public void testConvertFileStatusToFileMetaData() throws IOException {
+  public void testRelativePathParsing() throws IOException {
     FileStatus fileStatus = new FileStatus();
-    fileStatus.setPath(new Path("s3a://abc.def.bucket/source/path/directory/123.txt"));
+    fileStatus.setPath(new Path("hdfs://12.34.56.78/source/path/directory/123.txt"));
 
     // Copy a file that is part of a whole directory copy
     String sourcePath = "/source/path/directory";
-    S3FileMetadata metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    FileMetadata metadata = new FileMetadata(fileStatus, sourcePath);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getRelativePath(), "directory/123.txt");
-    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket/");
+    Assert.assertEquals(metadata.getHostURI(), "hdfs://12.34.56.78/");
 
     // Copy a file that is part of a whole directory copy without including the directory
     sourcePath = "/source/path/";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    metadata = new FileMetadata(fileStatus, sourcePath);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getRelativePath(), "directory/123.txt");
-    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket/");
+    Assert.assertEquals(metadata.getHostURI(), "hdfs://12.34.56.78/");
 
-    fileStatus.setPath(new Path("s3a://abc.def.bucket/"));
+    fileStatus.setPath(new Path("hdfs://12.34.56.78/"));
     sourcePath = "/";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    metadata = new FileMetadata(fileStatus, sourcePath);
     Assert.assertEquals(metadata.getRelativePath().isEmpty(), true);
 
-    fileStatus.setPath(new Path("s3a://abc.def.bucket/abc.txt"));
+    fileStatus.setPath(new Path("hdfs://12.34.56.78/abc.txt"));
     sourcePath = "/";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    metadata = new FileMetadata(fileStatus, sourcePath);
     Assert.assertEquals(metadata.getRelativePath(), "abc.txt");
   }
 
@@ -66,11 +66,11 @@ public class FileMetadataTest {
     final String basePath = "/abc";
 
     // generate 3 files with different file sizes
-    S3FileMetadata file1 = new S3FileMetadata(statusA, basePath, null, null, null);
+    FileMetadata file1 = new FileMetadata(statusA, basePath);
 
-    S3FileMetadata file2 = new S3FileMetadata(statusB, basePath, null, null, null);
+    FileMetadata file2 = new FileMetadata(statusB, basePath);
 
-    S3FileMetadata file3 = new S3FileMetadata(statusC, basePath, null, null, null);
+    FileMetadata file3 = new FileMetadata(statusC, basePath);
 
     Assert.assertEquals(file1.compareTo(file2), -1);
     Assert.assertEquals(file3.compareTo(file2), 0);

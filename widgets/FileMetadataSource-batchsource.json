@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "Local File Copy Source",
+      "label": "File Copy Source",
       "properties": [
         {
           "widget-type": "textbox",
@@ -14,7 +14,7 @@
         {
           "widget-type": "select",
           "label": "Scheme",
-          "name": "localScheme",
+          "name": "scheme",
           "widget-attributes": {
             "values": [
               "hdfs",
@@ -80,7 +80,7 @@
             "type": "string"
           },
           {
-            "name": "isFolder",
+            "name": "isDir",
             "type": "boolean"
           },
           {

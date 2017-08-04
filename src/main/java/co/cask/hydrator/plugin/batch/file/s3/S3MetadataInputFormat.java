@@ -44,7 +44,6 @@ public class S3MetadataInputFormat extends MetadataInputFormat {
   public static final String S3N_SECRET_KEY_ID = "fs.s3n.awsSecretAccessKey";
   public static final String S3N_FS_CLASS = "fs.s3n.impl";
 
-  public static final String REGION = "amazons3.region";
   public static final Logger LOG = LoggerFactory.getLogger(S3MetadataInputFormat.class);
 
 
@@ -72,10 +71,6 @@ public class S3MetadataInputFormat extends MetadataInputFormat {
     conf.set(S3N_FS_CLASS, NativeS3FileSystem.class.getName());
   }
 
-  public static void setRegion(Configuration conf, String value) {
-    conf.set(REGION, value);
-  }
-
   @Override
   protected MetadataInputSplit getInputSplit() {
     return new S3MetadataInputSplit();
@@ -86,11 +81,9 @@ public class S3MetadataInputFormat extends MetadataInputFormat {
     throws IOException {
     switch (fileStatus.getPath().toUri().getScheme()) {
       case "s3a":
-        return new S3FileMetadata(fileStatus, sourcePath,
-                                  conf.get(S3A_ACCESS_KEY_ID), conf.get(S3A_SECRET_KEY_ID), conf.get(REGION));
+        return new S3FileMetadata(fileStatus, sourcePath, conf.get(S3A_ACCESS_KEY_ID), conf.get(S3A_SECRET_KEY_ID));
       case "s3n":
-        return new S3FileMetadata(fileStatus, sourcePath,
-                                  conf.get(S3N_ACCESS_KEY_ID), conf.get(S3N_SECRET_KEY_ID), conf.get(REGION));
+        return new S3FileMetadata(fileStatus, sourcePath, conf.get(S3N_ACCESS_KEY_ID), conf.get(S3N_SECRET_KEY_ID));
       default:
         throw new IOException("Scheme must be either s3a or s3n.");
     }

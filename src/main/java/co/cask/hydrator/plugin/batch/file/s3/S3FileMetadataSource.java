@@ -14,7 +14,6 @@
  * the License.
  */
 
-
 package co.cask.hydrator.plugin.batch.file.s3;
 
 import co.cask.cdap.api.annotation.Description;
@@ -23,11 +22,14 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.batch.file.AbstractFileMetadataSource;
+import co.cask.hydrator.plugin.batch.file.FileMetadata;
 import co.cask.hydrator.plugin.common.JobUtils;
 import co.cask.hydrator.plugin.common.SourceInputFormatProvider;
 import org.apache.hadoop.conf.Configuration;
@@ -37,7 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FileCopySource plugin that pulls filemetadata from S3 Filesystem.
@@ -55,6 +58,14 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    List<Schema.Field> fieldList = new ArrayList<>(FileMetadata.DEFAULT_SCHEMA.getFields());
+    fieldList.addAll(S3FileMetadata.CREDENTIAL_SCHEMA.getFields());
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.recordOf("S3Schema", fieldList));
+  }
+
+  @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
     super.prepareRun(context);
     Job job = JobUtils.createInstance();
@@ -62,7 +73,6 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
 
     // initialize configuration
     setDefaultConf(conf);
-    S3MetadataInputFormat.setRegion(conf, config.region);
     S3MetadataInputFormat.setURI(conf, config.filesystemURI);
     String fsScheme = URI.create(config.filesystemURI).getScheme();
     switch (fsScheme) {
@@ -106,19 +116,13 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
     @Description("Your AWS Secret Key Id")
     public String secretKeyId;
 
-    @Macro
-    @Nullable
-    @Description("The AWS Region to operate in")
-    public String region;
-
     public S3FileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize,
                                       String filesystemURI, String accessKeyId,
-                                      String secretKeyId, String region) {
+                                      String secretKeyId) {
       super(name, sourcePaths, maxSplitSize);
       this.filesystemURI = filesystemURI;
       this.accessKeyId = accessKeyId;
       this.secretKeyId = secretKeyId;
-      this.region = region;
     }
 
     @Override

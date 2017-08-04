@@ -43,7 +43,7 @@ public class FileMetadata implements Comparable {
   public static final String OWNER = "owner";
   public static final String GROUP = "group";
   public static final String FULL_PATH = "fullPath";
-  public static final String IS_FOLDER = "isFolder";
+  public static final String IS_DIR = "isDir";
   public static final String RELATIVE_PATH = "relativePath";
   public static final String PERMISSION = "permission";
   public static final String HOST_URI = "hostURI";
@@ -57,7 +57,7 @@ public class FileMetadata implements Comparable {
     Schema.Field.of(MODIFICATION_TIME, Schema.of(Schema.Type.LONG)),
     Schema.Field.of(GROUP, Schema.of(Schema.Type.LONG)),
     Schema.Field.of(OWNER, Schema.of(Schema.Type.STRING)),
-    Schema.Field.of(IS_FOLDER, Schema.of(Schema.Type.BOOLEAN)),
+    Schema.Field.of(IS_DIR, Schema.of(Schema.Type.BOOLEAN)),
     Schema.Field.of(RELATIVE_PATH, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(PERMISSION, Schema.of(Schema.Type.INT)),
     Schema.Field.of(HOST_URI, Schema.of(Schema.Type.STRING))
@@ -82,8 +82,8 @@ public class FileMetadata implements Comparable {
   // file owner
   private final String owner;
 
-  // whether or not the file is a folder
-  private final boolean isFolder;
+  // whether or not the file is a directory
+  private final boolean isDir;
 
   /*
    * The relavite path is constructed by deleting the portion of the source
@@ -119,7 +119,7 @@ public class FileMetadata implements Comparable {
   public FileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
     fileName = fileStatus.getPath().getName();
     fullPath = fileStatus.getPath().toUri().getPath();
-    isFolder = fileStatus.isDirectory();
+    isDir = fileStatus.isDirectory();
     modificationTime = fileStatus.getModificationTime();
     owner = fileStatus.getOwner();
     group = fileStatus.getGroup();
@@ -155,7 +155,7 @@ public class FileMetadata implements Comparable {
     this.group = record.get(GROUP);
     this.owner = record.get(OWNER);
     this.fileSize = record.get(FILE_SIZE);
-    this.isFolder = record.get(IS_FOLDER);
+    this.isDir = record.get(IS_DIR);
     this.relativePath = record.get(RELATIVE_PATH);
     this.permission = record.get(PERMISSION);
     this.hostURI = record.get(HOST_URI);
@@ -173,7 +173,7 @@ public class FileMetadata implements Comparable {
     this.group = dataInput.readUTF();
     this.owner = dataInput.readUTF();
     this.fileSize = dataInput.readLong();
-    this.isFolder = dataInput.readBoolean();
+    this.isDir = dataInput.readBoolean();
     this.relativePath = dataInput.readUTF();
     this.permission = dataInput.readShort();
     this.hostURI = dataInput.readUTF();
@@ -203,8 +203,8 @@ public class FileMetadata implements Comparable {
     return owner;
   }
 
-  public boolean isFolder() {
-    return isFolder;
+  public boolean isDir() {
+    return isDir;
   }
 
   public String getRelativePath() {
@@ -244,11 +244,11 @@ public class FileMetadata implements Comparable {
       .set(MODIFICATION_TIME, modificationTime)
       .set(GROUP, group)
       .set(OWNER, owner)
-      .set(IS_FOLDER, isFolder)
+      .set(IS_DIR, isDir)
       .set(RELATIVE_PATH, relativePath)
       .set(PERMISSION, permission)
       .set(HOST_URI, hostURI);
-    addCredentialsToBuilder(outputBuilder);
+    addCredentialsToRecordBuilder(outputBuilder);
 
     return outputBuilder.build();
   }
@@ -273,7 +273,7 @@ public class FileMetadata implements Comparable {
     dataOutput.writeUTF(getGroup());
     dataOutput.writeUTF(getOwner());
     dataOutput.writeLong(getFileSize());
-    dataOutput.writeBoolean(isFolder());
+    dataOutput.writeBoolean(isDir());
     dataOutput.writeUTF(getRelativePath());
     dataOutput.writeShort(getPermission());
     dataOutput.writeUTF(getHostURI());
@@ -291,7 +291,7 @@ public class FileMetadata implements Comparable {
    * Override this in extended class to add credential information to StructuredRecord.
    * @param builder
    */
-  protected void addCredentialsToBuilder(StructuredRecord.Builder builder) {
-
+  protected void addCredentialsToRecordBuilder(StructuredRecord.Builder builder) {
+    // no op
   }
 }

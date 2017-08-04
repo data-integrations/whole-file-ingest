@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.file.hdfs;
+package co.cask.hydrator.plugin.batch.file.fs;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -36,14 +36,14 @@ import java.net.URISyntaxException;
  * FileCopySink that writes to local filesystem or local HDFS.
  */
 @Plugin(type = BatchSink.PLUGIN_TYPE)
-@Name("LocalFileCopySink")
+@Name("FileCopySink")
 @Description("Copies files from remote filesystem to local filesystem or local HDFS.")
-public class LocalFileCopySink extends AbstractFileCopySink {
+public class FileCopySink extends AbstractFileCopySink {
 
-  private LocalFileCopySinkConfig config;
-  private static final Logger LOG = LoggerFactory.getLogger(LocalFileCopySink.class);
+  private FileCopySinkConfig config;
+  private static final Logger LOG = LoggerFactory.getLogger(FileCopySink.class);
 
-  public LocalFileCopySink(LocalFileCopySinkConfig config) {
+  public FileCopySink(FileCopySinkConfig config) {
     super(config);
     this.config = config;
   }
@@ -51,34 +51,34 @@ public class LocalFileCopySink extends AbstractFileCopySink {
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     config.validate();
-    context.addOutput(Output.of(config.referenceName, new LocalFileCopyOutputFormatProvider(config)));
+    context.addOutput(Output.of(config.referenceName, new FileCopyOutputFormatProvider(config)));
   }
 
   /**
    * Configurations required for connecting to HDFS.
    */
-  public class LocalFileCopySinkConfig extends AbstractFileCopySinkConfig {
+  public class FileCopySinkConfig extends AbstractFileCopySinkConfig {
 
     @Description("Scheme of the destination filesystem.")
-    public String localScheme;
+    public String scheme;
 
-    public LocalFileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
-                                   Boolean preserveFileOwner, @Nullable Integer bufferSize, String localScheme) {
+    public FileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
+                              Boolean preserveFileOwner, @Nullable Integer bufferSize, String scheme) {
       super(name, basePath, enableOverwrite, preserveFileOwner, bufferSize);
-      this.localScheme = localScheme;
+      this.scheme = scheme;
     }
 
     @Override
     public String getScheme() {
-      return localScheme;
+      return scheme;
     }
   }
 
   /**
    * Adds necessary configuration resources and provides OutputFormat Class
    */
-  public class LocalFileCopyOutputFormatProvider extends FileCopyOutputFormatProvider {
-    public LocalFileCopyOutputFormatProvider(AbstractFileCopySinkConfig config) {
+  public class FileCopyOutputFormatProvider extends AbstractFileCopySink.FileCopyOutputFormatProvider {
+    public FileCopyOutputFormatProvider(AbstractFileCopySinkConfig config) {
       super(config);
       switch (config.getScheme()) {
         case "file" :

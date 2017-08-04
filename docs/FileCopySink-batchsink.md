@@ -1,8 +1,8 @@
-# Local File Copy Batch Sink
+# File Copy Batch Sink
 
 Description
 -----------
-The Local File Copy plugin is a sink plugin that takes file metadata records as inputs and copies the files into the local HDFS or the local filesystem.
+The File Copy plugin is a sink plugin that takes file metadata records as inputs and copies the files into the local HDFS or the local filesystem.
 
 
 Use Case
@@ -35,7 +35,7 @@ This sink plugin only reads StructuredRecords with the following schema. Each re
 | **modificationTime**   | long   | The modification timestamp of the file.                                                                                                        |
 | **group**              | String | The group that the of the file belongs to.                                                                                                     |
 | **owner**              | String | The owner of the file.                                                                                                                         |
-| **isFolder**           | Boolean| Whether or not the file is a folder.                                                                                                           |
+| **isDir**              | Boolean| Whether or not the file is a directory.                                                                                                        |
 | **relativePath**       | String | The relative path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
 | **permission**         | int    | The file's access permission                                                                                                                   |
 | **Credentials**        | Record | Additional information required to connect to the source Filesystem.                                                                           |

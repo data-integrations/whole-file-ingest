@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "Local File Copy Sink",
+      "label": "File Copy Sink",
       "properties": [
         {
           "widget-type": "textbox",
@@ -14,7 +14,7 @@
         {
           "widget-type": "select",
           "label": "Scheme",
-          "name": "localScheme",
+          "name": "scheme",
           "widget-attributes": {
             "values": [
               "hdfs",

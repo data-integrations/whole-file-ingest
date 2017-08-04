@@ -22,7 +22,6 @@ Properties
 | **Buffer Size**                          |  **N**   | 1 MB      | The size of the buffer (in Megabytes) that temporarily stores data from file input stream while copying. Defaults to 1 MB.                                                                                             |
 | **Access Key ID**                        |  **Y**   | None      | Your Amazon S3 access key ID.                                                                                                                                                                                          |
 | **Secret Key ID**                        |  **Y**   | None      | Your Amazon S3 secret key ID.                                                                                                                                                                                          |
-| **Amazon Region**                        |  **N**   | us-east-1 | Region of the bucket which you want to write to.                                                                                                                                                                       |
 
 Usage Notes
 -----------
@@ -37,7 +36,7 @@ This sink plugin only reads StructuredRecords with the following schema. Each re
 | **modificationTime**   | long   | The modification timestamp of the file.                                                                                                        |
 | **group**              | String | The group that the of the file belongs to.                                                                                                     |
 | **owner**              | String | The owner of the file.                                                                                                                         |
-| **isFolder**           | Boolean| Whether or not the file is a folder.                                                                                                           |
+| **isDir**              | Boolean| Whether or not the file is a directory.                                                                                                        |
 | **relativePath**       | String | The relative path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
 | **permission**         | int    | The file's access permission                                                                                                                   |
 | **Credentials**        | Record | Additional information required to connect to the source Filesystem.                                                                           |

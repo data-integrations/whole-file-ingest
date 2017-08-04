@@ -22,7 +22,6 @@ Properties
 | **Copy Recursively**   |  **Y**   | True      | Whether or not to copy recursively. Similar to the `-r` option in the `cp` terminal command. Set this to true if you want to copy the entire directory recursively.                                                                    |
 | **Access Key ID**      |  **Y**   | None      | Your Amazon S3 access key ID.                                                                                                                                                                                                          |
 | **Secret Key ID**      |  **Y**   | None      | Your Amazon S3 secret key ID.                                                                                                                                                                                                          |
-| **Amazon Region**      |  **N**   | us-east-1 | Region of the bucket which you want to read from.                                                                                                                                                                                      |
 
 Usage Notes
 -----------
@@ -38,9 +37,8 @@ A structured record with the following schema is emitted for each file it reads.
 | **modificationTime**   | long   | The modification timestamp of the file.                                                                                                        |
 | **group**              | String | The group that the of the file belongs to.                                                                                                     |
 | **owner**              | String | The owner of the file.                                                                                                                         |
-| **isFolder**           | Boolean| Whether or not the file is a folder.                                                                                                           |
+| **isDir**              | Boolean| Whether or not the file is a directory.                                                                                                        |
 | **relativePath**       | String | The relative path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
 | **permission**         | int    | The file's access permission                                                                                                                   |
 | **accessKeyID**        | String | Access Key ID for the source Filesystem.                                                                                                       |
 | **secretKeyID**        | String | Secret Key ID for the source Filesystem.                                                                                                       |
-| **region**             | String | Region of the source Filesystem.                                                                                                               |

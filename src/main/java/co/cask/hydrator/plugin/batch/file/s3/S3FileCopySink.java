@@ -70,19 +70,13 @@ public class S3FileCopySink extends AbstractFileCopySink {
     @Description("Your AWS Secret Key Id")
     public String secretKeyId;
 
-    @Macro
-    @Nullable
-    @Description("The AWS Region to operate in")
-    public String region;
-
     public S3FileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
                                 Boolean preserveFileOwner, Integer bufferSize, String filesystemURI,
-                                String accessKeyId, String secretKeyId, String region) {
+                                String accessKeyId, String secretKeyId) {
       super(name, basePath, enableOverwrite, preserveFileOwner, bufferSize);
       this.filesystemURI = filesystemURI;
       this.accessKeyId = accessKeyId;
       this.secretKeyId = secretKeyId;
-      this.region = region;
     }
 
     @Override
