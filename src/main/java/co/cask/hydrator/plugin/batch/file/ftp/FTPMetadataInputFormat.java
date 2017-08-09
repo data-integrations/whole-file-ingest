@@ -16,10 +16,15 @@
 
 package co.cask.hydrator.plugin.batch.file.ftp;
 
+import co.cask.hydrator.plugin.batch.file.FileMetadata;
 import co.cask.hydrator.plugin.batch.file.MetadataInputFormat;
+import co.cask.hydrator.plugin.batch.file.MetadataInputSplit;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.ftp.FTPFileSystem;
 import org.apache.hadoop.fs.sftp.SFTPFileSystem;
+
+import java.io.IOException;
 
 public class FTPMetadataInputFormat extends MetadataInputFormat {
 
@@ -29,23 +34,66 @@ public class FTPMetadataInputFormat extends MetadataInputFormat {
   // configs for sftp
   public static final String SFTP_FS_CLASS = "fs.sftp.impl";
 
-  public static void setFtpUsername(Configuration conf, String host, String username) {
+  // setters for FTP
+  public static void setFTPUsername(Configuration conf, String host, String username) {
     conf.set(FTPFileSystem.FS_FTP_USER_PREFIX + host, username);
   }
 
-  public static void setFtpPassword(Configuration conf, String host, String password) {
+  public static void setFTPassword(Configuration conf, String host, String password) {
     conf.set(FTPFileSystem.FS_FTP_PASSWORD_PREFIX + host, password);
   }
 
-  public static void setFtpHost(Configuration conf, String host) {
+  public static void setFTPHost(Configuration conf, String host) {
     conf.set(FTPFileSystem.FS_FTP_HOST, host);
   }
 
-  public static void setFtpFsClass(Configuration conf) {
+  public static void setFTPFsClass(Configuration conf) {
     conf.set(FTP_FS_CLASS, FTPFileSystem.class.getName());
   }
 
-  public static void setSftpFsClass(Configuration conf) {
+  // setters for SFTP
+  public static void setSFTPUsername(Configuration conf, String host, String username) {
+    conf.set(SFTPFileSystem.FS_SFTP_USER_PREFIX + host, username);
+  }
+
+  public static void setSFTPPassword(Configuration conf, String host, String password) {
+    conf.set(SFTPFileSystem.FS_SFTP_PASSWORD_PREFIX + host, password);
+  }
+
+  public static void setSFTPHost(Configuration conf, String host) {
+    conf.set(SFTPFileSystem.FS_SFTP_HOST, host);
+  }
+
+  public static void setSFTPKeyFilePath(Configuration conf, String path) {
+    conf.set(SFTPFileSystem.FS_SFTP_KEYFILE, path);
+  }
+
+  public static void setSFTPFsClass(Configuration conf) {
     conf.set(SFTP_FS_CLASS, SFTPFileSystem.class.getName());
+  }
+
+  @Override
+  protected MetadataInputSplit getInputSplit() {
+    return new FTPMetadataInputSplit();
+  }
+
+  @Override
+  protected FileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
+    throws IOException {
+    String host = fileStatus.getPath().toUri().getHost();
+    switch (fileStatus.getPath().toUri().getScheme()) {
+      case "ftp":
+        return new FTPFileMetadata(fileStatus, sourcePath,
+                                   conf.get(FTPFileSystem.FS_FTP_USER_PREFIX + host),
+                                   conf.get(FTPFileSystem.FS_FTP_PASSWORD_PREFIX + host, null),
+                                   null);
+      case "sftp":
+        return new FTPFileMetadata(fileStatus, sourcePath,
+                                   conf.get(SFTPFileSystem.FS_SFTP_USER_PREFIX + host),
+                                   conf.get(SFTPFileSystem.FS_SFTP_PASSWORD_PREFIX + host, null),
+                                   conf.get(SFTPFileSystem.FS_SFTP_KEYFILE, null));
+      default:
+        throw new IOException("Scheme must be either ftp or sftp");
+    }
   }
 }

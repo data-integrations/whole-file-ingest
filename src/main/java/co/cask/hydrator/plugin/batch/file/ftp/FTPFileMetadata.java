@@ -29,32 +29,39 @@ public class FTPFileMetadata extends FileMetadata {
 
   public static final String FTP_USERNAME = "ftpUsername";
   public static final String FTP_PASSWORD = "ftpPassword";
+  public static final String SFTP_KEY_PATH = "sftpKeyPath";
   public static final Schema CREDENTIAL_SCHEMA = Schema.recordOf(
     "metadata",
     Schema.Field.of(FTP_USERNAME, Schema.of(Schema.Type.STRING)),
-    Schema.Field.of(FTP_PASSWORD, Schema.of(Schema.Type.STRING))
+    Schema.Field.of(FTP_PASSWORD, Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+    Schema.Field.of(SFTP_KEY_PATH, Schema.nullableOf(Schema.of(Schema.Type.STRING)))
   );
 
   private final String ftpUsername;
   private final String ftpPassword;
+  private final String sftpKeyPath;
 
-  public FTPFileMetadata(FileStatus fileStatus, String sourcePath, String ftpUsername, String ftpPassword)
+  public FTPFileMetadata(FileStatus fileStatus, String sourcePath, String ftpUsername, String ftpPassword,
+                         String sftpKeyPath)
     throws IOException {
     super(fileStatus, sourcePath);
     this.ftpUsername = ftpUsername;
     this.ftpPassword = ftpPassword;
+    this.sftpKeyPath = sftpKeyPath;
   }
 
   public FTPFileMetadata(StructuredRecord record) {
     super(record);
     this.ftpUsername = record.get(FTP_USERNAME);
     this.ftpPassword = record.get(FTP_PASSWORD);
+    this.sftpKeyPath = record.get(SFTP_KEY_PATH);
   }
 
   public FTPFileMetadata(DataInput dataInput) throws IOException {
     super(dataInput);
     this.ftpUsername = dataInput.readUTF();
     this.ftpPassword = dataInput.readUTF();
+    this.sftpKeyPath = dataInput.readUTF();
   }
 
   public String getFtpUsername() {
@@ -63,6 +70,10 @@ public class FTPFileMetadata extends FileMetadata {
 
   public String getFtpPassword() {
     return ftpPassword;
+  }
+
+  public String getSftpKeyPath() {
+    return sftpKeyPath;
   }
 
   @Override
@@ -74,7 +85,8 @@ public class FTPFileMetadata extends FileMetadata {
   protected void addCredentialsToRecordBuilder(StructuredRecord.Builder builder) {
     builder
       .set(FTP_USERNAME, ftpUsername)
-      .set(FTP_PASSWORD, ftpPassword);
+      .set(FTP_PASSWORD, ftpPassword)
+      .set(SFTP_KEY_PATH, sftpKeyPath);
   }
 
   @Override
@@ -82,5 +94,6 @@ public class FTPFileMetadata extends FileMetadata {
     super.write(dataOutput);
     dataOutput.writeUTF(ftpUsername);
     dataOutput.writeUTF(ftpPassword);
+    dataOutput.writeUTF(sftpKeyPath);
   }
 }

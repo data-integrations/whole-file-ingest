@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.file;
 
+import co.cask.hydrator.plugin.batch.file.ftp.FTPFileMetadata;
+import co.cask.hydrator.plugin.batch.file.ftp.FTPMetadataInputFormat;
 import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
 import co.cask.hydrator.plugin.batch.file.s3.S3MetadataInputFormat;
 import org.apache.hadoop.conf.Configuration;
@@ -210,6 +212,27 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, FileMetadat
         S3MetadataInputFormat.setS3nAccessKeyId(conf, s3nFileMetadata.getAccessKeyId());
         S3MetadataInputFormat.setS3nSecretKeyId(conf, s3nFileMetadata.getSecretKeyId());
         S3MetadataInputFormat.setS3nFsClass(conf);
+        break;
+      case "ftp":
+        FTPFileMetadata ftpFileMetadata = (FTPFileMetadata) metadata;
+        FTPMetadataInputFormat.setFTPUsername(conf, uri.getHost(), ftpFileMetadata.getFtpUsername());
+        FTPMetadataInputFormat.setFTPHost(conf, uri.getHost());
+        FTPMetadataInputFormat.setFTPFsClass(conf);
+        if (ftpFileMetadata.getFtpPassword() != null) {
+          FTPMetadataInputFormat.setFTPassword(conf, uri.getHost(), ftpFileMetadata.getFtpPassword());
+        }
+        break;
+      case "sftp":
+        FTPFileMetadata sftpFileMetadata = (FTPFileMetadata) metadata;
+        FTPMetadataInputFormat.setSFTPUsername(conf, uri.getHost(), sftpFileMetadata.getFtpUsername());
+        FTPMetadataInputFormat.setSFTPHost(conf, uri.getHost());
+        FTPMetadataInputFormat.setSFTPFsClass(conf);
+        if (sftpFileMetadata.getFtpPassword() != null) {
+          FTPMetadataInputFormat.setSFTPPassword(conf, uri.getHost(), sftpFileMetadata.getFtpPassword());
+        }
+        if (sftpFileMetadata.getSftpKeyPath() != null) {
+          FTPMetadataInputFormat.setSFTPKeyFilePath(conf, sftpFileMetadata.getSftpKeyPath());
+        }
         break;
       case "file":
       case "hdfs":

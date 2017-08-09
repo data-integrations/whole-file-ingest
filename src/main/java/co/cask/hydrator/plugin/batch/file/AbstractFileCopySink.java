@@ -25,6 +25,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.plugin.batch.file.ftp.FTPFileMetadata;
 import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
 import co.cask.hydrator.plugin.common.ReferenceBatchSink;
 import co.cask.hydrator.plugin.common.ReferencePluginConfig;
@@ -71,16 +72,20 @@ public abstract class AbstractFileCopySink
     FileMetadata output;
     String fsScheme = URI.create((String) input.get(FileMetadata.HOST_URI)).getScheme();
     switch (fsScheme) {
-      case "s3n" :
-      case "s3a" :
+      case "s3n":
+      case "s3a":
         output = new S3FileMetadata(input);
         break;
-      case "file" :
-      case "hdfs" :
+      case "ftp":
+      case "sftp":
+        output = new FTPFileMetadata(input);
+        break;
+      case "file":
+      case "hdfs":
         output = new FileMetadata(input);
         break;
       default:
-        throw new IllegalArgumentException(fsScheme + "is not supported.");
+        throw new IllegalArgumentException(fsScheme + " is not supported.");
     }
     emitter.emit(new KeyValue<NullWritable, FileMetadata>(null, output));
   }

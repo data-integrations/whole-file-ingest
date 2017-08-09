@@ -16,7 +16,19 @@
 
 package co.cask.hydrator.plugin.batch.file.ftp;
 
+import co.cask.hydrator.plugin.batch.file.FileMetadata;
 import co.cask.hydrator.plugin.batch.file.MetadataInputSplit;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class FTPMetadataInputSplit extends MetadataInputSplit {
+  public FTPMetadataInputSplit() {
+    super();
+  }
+
+  @Override
+  protected FileMetadata readFileMetaData(DataInput dataInput) throws IOException {
+    return new FTPFileMetadata(dataInput);
+  }
 }
