@@ -138,7 +138,7 @@ public class FileMetadata implements Comparable {
       hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(),
                         Path.SEPARATOR, null).toString();
     } catch (URISyntaxException e) {
-      throw new IOException(e.getMessage());
+      throw new IOException(e);
     }
   }
 

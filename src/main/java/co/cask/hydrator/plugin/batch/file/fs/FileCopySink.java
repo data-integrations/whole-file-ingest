@@ -86,7 +86,7 @@ public class FileCopySink extends AbstractFileCopySink {
             conf.put(FileCopyOutputFormat.FS_HOST_URI,
                      new URI(config.getScheme(), null, Path.SEPARATOR, null).toString());
           } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e.getMessage());
+            throw new IllegalArgumentException(e);
           }
           break;
         case "hdfs" :
