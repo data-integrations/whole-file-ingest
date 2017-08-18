@@ -30,9 +30,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class AbstractMetadataInputSplitTest {
+public class MetadataInputSplitTest {
   @Test
-  public void testSerializeAndDeserialize() throws Exception {
+  public void testS3SerializeAndDeserialize() throws Exception {
     // required for abstract metadata
     final long lengthA = 101;
     final long lengthB = 202;
@@ -50,15 +50,14 @@ public class AbstractMetadataInputSplitTest {
     // required for s3metadata
     final String accessKeyId = "akey";
     final String secretKeyId = "skey";
-    final String region = "us-east-1";
 
     // initialize an inputSplit
     FileStatus fileStatusA = new FileStatus(lengthA, isdir, blockReplication, blocksize,
                                            modificationTime, accessTime, permission, owner, group, path);
     FileStatus fileStatusB = new FileStatus(lengthB, isdir, blockReplication, blocksize,
                                             modificationTime, accessTime, permission, owner, group, path);
-    S3FileMetadata originalMetadataA = new S3FileMetadata(fileStatusA, sourcePath, accessKeyId, secretKeyId, region);
-    S3FileMetadata originalMetadataB = new S3FileMetadata(fileStatusB, sourcePath, accessKeyId, secretKeyId, region);
+    S3FileMetadata originalMetadataA = new S3FileMetadata(fileStatusA, sourcePath, accessKeyId, secretKeyId);
+    S3FileMetadata originalMetadataB = new S3FileMetadata(fileStatusB, sourcePath, accessKeyId, secretKeyId);
     S3MetadataInputSplit metadataInputSplit = new S3MetadataInputSplit();
     metadataInputSplit.addFileMetadata(originalMetadataA);
     metadataInputSplit.addFileMetadata(originalMetadataB);
@@ -91,26 +90,21 @@ public class AbstractMetadataInputSplitTest {
 
   @Test
   public void testCompare() throws IOException {
-    S3MetadataInputSplit metadataInputSplita = new S3MetadataInputSplit();
-    S3MetadataInputSplit metadataInputSplitb = new S3MetadataInputSplit();
-    S3MetadataInputSplit metadataInputSplitc = new S3MetadataInputSplit();
+    MetadataInputSplit metadataInputSplita = new MetadataInputSplit();
+    MetadataInputSplit metadataInputSplitb = new MetadataInputSplit();
+    MetadataInputSplit metadataInputSplitc = new MetadataInputSplit();
 
-    final FileStatus statusA = new FileStatus(1, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileA"));
-    final FileStatus statusB = new FileStatus(2, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileB"));
-    final FileStatus statusC = new FileStatus(3, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileC"));
+    final FileStatus statusA = new FileStatus(1, false, 0, 0, 0, new Path("hdfs://hello.com/abc/fileA"));
+    final FileStatus statusB = new FileStatus(2, false, 0, 0, 0, new Path("hdfs://hello.com/abc/fileB"));
+    final FileStatus statusC = new FileStatus(3, false, 0, 0, 0, new Path("hdfs://hello.com/abc/fileC"));
     final String basePath = "/abc";
 
-    // required for s3metadata
-    final String accessKeyId = "akey";
-    final String secretKeyId = "skey";
-    final String region = "us-east-1";
-
     // generate 3 files with different file sizes
-    S3FileMetadata file1 = new S3FileMetadata(statusA, basePath, accessKeyId, secretKeyId, region);
+    FileMetadata file1 = new FileMetadata(statusA, basePath);
 
-    S3FileMetadata file2 = new S3FileMetadata(statusB, basePath, accessKeyId, secretKeyId, region);
+    FileMetadata file2 = new FileMetadata(statusB, basePath);
 
-    S3FileMetadata file3 = new S3FileMetadata(statusC, basePath, accessKeyId, secretKeyId, region);
+    FileMetadata file3 = new FileMetadata(statusC, basePath);
 
     // a has 3 bytes
     metadataInputSplita.addFileMetadata(file1);

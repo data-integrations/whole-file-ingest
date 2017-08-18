@@ -31,38 +31,27 @@ import java.util.List;
  * Abstract class that implements information for InputSplit.
  * Contains a list of fileMetadata that is assigned to the specific split.
  */
-public abstract class AbstractMetadataInputSplit extends InputSplit implements Writable, Comparable {
-  private List<AbstractFileMetadata> fileMetaDataList;
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractMetadataInputSplit.class);
+public class MetadataInputSplit extends InputSplit implements Writable, Comparable {
+  private List<FileMetadata> fileMetaDataList;
+  private static final Logger LOG = LoggerFactory.getLogger(MetadataInputSplit.class);
   private long totalBytes;
 
-  public AbstractMetadataInputSplit(List<AbstractFileMetadata> fileMetaDataList) {
-    this.fileMetaDataList = fileMetaDataList;
-    this.totalBytes = 0;
-    for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
-      this.totalBytes += fileMetaData.getFileSize();
-    }
-  }
-
-  public AbstractMetadataInputSplit() {
+  public MetadataInputSplit() {
     this.fileMetaDataList = new ArrayList<>();
     this.totalBytes = 0;
   }
 
-  public List<AbstractFileMetadata> getFileMetaDataList() {
+  public List<FileMetadata> getFileMetaDataList() {
     return this.fileMetaDataList;
   }
 
   @Override
   public void write(DataOutput dataOutput) throws IOException {
     try {
-      // write total number of file bytes
-      dataOutput.writeLong(this.getTotalBytes());
-
       // write number of files
       dataOutput.writeLong(this.getLength());
 
-      for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
+      for (FileMetadata fileMetaData : fileMetaDataList) {
         // convert each filestatus (serializable) to byte array
         fileMetaData.write(dataOutput);
       }
@@ -74,16 +63,14 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
 
   @Override
   public void readFields(DataInput dataInput) throws IOException {
-    // get total number of bytes
-    totalBytes = dataInput.readLong();
 
     // read number of files
     long numObjects = dataInput.readLong();
 
     fileMetaDataList = new ArrayList<>();
     for (long i = 0; i < numObjects; i++) {
-      AbstractFileMetadata metadata = readFileMetaData(dataInput);
-      fileMetaDataList.add(metadata);
+      FileMetadata metadata = readFileMetaData(dataInput);
+      addFileMetadata(metadata);
     }
   }
 
@@ -109,20 +96,35 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
     return new String[0];
   }
 
-  public void addFileMetadata(AbstractFileMetadata fileMetaData) {
+  /**
+   * Adds a new file to the split.
+   *
+   * @param fileMetaData The file to be added.
+   */
+  public void addFileMetadata(FileMetadata fileMetaData) {
     fileMetaDataList.add(fileMetaData);
     totalBytes += fileMetaData.getFileSize();
   }
 
-  @Override
   /**
    * Compares the total number of bytes contained in the split
    */
+  @Override
   public int compareTo(Object o) {
-    return Long.compare(getTotalBytes(), ((AbstractMetadataInputSplit) o).getTotalBytes());
+    return Long.compare(getTotalBytes(), ((MetadataInputSplit) o).getTotalBytes());
   }
 
-  protected abstract AbstractFileMetadata readFileMetaData(DataInput dataInput) throws IOException;
+  /**
+   * This function deserializes FileMetadata from an input stream. Override this function if the metadata class
+   * specific to the filesystem has its own deserialization method.
+   *
+   * @param dataInput The input stream we wish to deserialize from.
+   * @return Deserialized FileMetadata.
+   * @throws IOException
+   */
+  protected FileMetadata readFileMetaData(DataInput dataInput) throws IOException {
+    return new FileMetadata(dataInput);
+  }
 }
 
 

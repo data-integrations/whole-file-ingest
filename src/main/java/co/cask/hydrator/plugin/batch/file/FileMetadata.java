@@ -35,7 +35,7 @@ import java.util.List;
  * Abstract class that contains file metadata fields.
  * Extend from this class to add credentials specific to different filesystems.
  */
-public abstract class AbstractFileMetadata implements Comparable {
+public class FileMetadata implements Comparable {
 
   public static final String FILE_NAME = "fileName";
   public static final String FILE_SIZE = "fileSize";
@@ -43,11 +43,12 @@ public abstract class AbstractFileMetadata implements Comparable {
   public static final String OWNER = "owner";
   public static final String GROUP = "group";
   public static final String FULL_PATH = "fullPath";
-  public static final String IS_FOLDER = "isFolder";
+  public static final String IS_DIR = "isDir";
   public static final String RELATIVE_PATH = "relativePath";
   public static final String PERMISSION = "permission";
   public static final String HOST_URI = "hostURI";
 
+  // The default schema that will be used to convert this object to a StructuredRecord.
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "metadata",
     Schema.Field.of(FILE_NAME, Schema.of(Schema.Type.STRING)),
@@ -56,7 +57,7 @@ public abstract class AbstractFileMetadata implements Comparable {
     Schema.Field.of(MODIFICATION_TIME, Schema.of(Schema.Type.LONG)),
     Schema.Field.of(GROUP, Schema.of(Schema.Type.LONG)),
     Schema.Field.of(OWNER, Schema.of(Schema.Type.STRING)),
-    Schema.Field.of(IS_FOLDER, Schema.of(Schema.Type.BOOLEAN)),
+    Schema.Field.of(IS_DIR, Schema.of(Schema.Type.BOOLEAN)),
     Schema.Field.of(RELATIVE_PATH, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(PERMISSION, Schema.of(Schema.Type.INT)),
     Schema.Field.of(HOST_URI, Schema.of(Schema.Type.STRING))
@@ -81,8 +82,8 @@ public abstract class AbstractFileMetadata implements Comparable {
   // file owner
   private final String owner;
 
-  // whether or not the file is a folder
-  private final boolean isFolder;
+  // whether or not the file is a directory
+  private final boolean isDir;
 
   /*
    * The relavite path is constructed by deleting the portion of the source
@@ -105,12 +106,20 @@ public abstract class AbstractFileMetadata implements Comparable {
    */
   private final String hostURI;
 
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractFileMetadata.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FileMetadata.class);
 
-  protected AbstractFileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
+  /**
+   * Constructs a FileMetadata instance given a FileStatus and source path. Override this method to add additional
+   * credential fields to the instance.
+   *
+   * @param fileStatus The FileStatus object that contains raw file metadata for this object.
+   * @param sourcePath The user specified path that was used to obtain this file.
+   * @throws IOException
+   */
+  public FileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
     fileName = fileStatus.getPath().getName();
     fullPath = fileStatus.getPath().toUri().getPath();
-    isFolder = fileStatus.isDirectory();
+    isDir = fileStatus.isDirectory();
     modificationTime = fileStatus.getModificationTime();
     owner = fileStatus.getOwner();
     group = fileStatus.getGroup();
@@ -126,38 +135,45 @@ public abstract class AbstractFileMetadata implements Comparable {
 
     // construct host URI given the full path from filestatus
     try {
-      hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(), null, null)
-        .toString();
+      hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(),
+                        Path.SEPARATOR, null).toString();
     } catch (URISyntaxException e) {
-      throw new IOException(e.getMessage());
+      throw new IOException(e);
     }
   }
 
-  protected AbstractFileMetadata(StructuredRecord record) {
+  /**
+   * Use this constructor to construct a FileMetadata from a StructuredRecord. Override this method if additional
+   * credentials are contained in the structured record.
+   *
+   * @param record The StructuredRecord instance to convert from.
+   */
+  public FileMetadata(StructuredRecord record) {
     this.fileName = record.get(FILE_NAME);
     this.fullPath = record.get(FULL_PATH);
     this.modificationTime = record.get(MODIFICATION_TIME);
     this.group = record.get(GROUP);
     this.owner = record.get(OWNER);
     this.fileSize = record.get(FILE_SIZE);
-    this.isFolder = record.get(IS_FOLDER);
+    this.isDir = record.get(IS_DIR);
     this.relativePath = record.get(RELATIVE_PATH);
     this.permission = record.get(PERMISSION);
     this.hostURI = record.get(HOST_URI);
   }
 
   /**
-   * use this constructor to deserialize from DataInput
-   * @param dataInput
+   * Use this constructor to deserialize from an input stream.
+   *
+   * @param dataInput The input stream to deserialize from.
    */
-  protected AbstractFileMetadata(DataInput dataInput) throws IOException {
+  public FileMetadata(DataInput dataInput) throws IOException {
     this.fileName = dataInput.readUTF();
     this.fullPath = dataInput.readUTF();
     this.modificationTime = dataInput.readLong();
     this.group = dataInput.readUTF();
     this.owner = dataInput.readUTF();
     this.fileSize = dataInput.readLong();
-    this.isFolder = dataInput.readBoolean();
+    this.isDir = dataInput.readBoolean();
     this.relativePath = dataInput.readUTF();
     this.permission = dataInput.readShort();
     this.hostURI = dataInput.readUTF();
@@ -187,8 +203,8 @@ public abstract class AbstractFileMetadata implements Comparable {
     return owner;
   }
 
-  public boolean isFolder() {
-    return isFolder;
+  public boolean isDir() {
+    return isDir;
   }
 
   public String getRelativePath() {
@@ -204,14 +220,21 @@ public abstract class AbstractFileMetadata implements Comparable {
   }
 
   /**
-   * Converts to StructuredRecord
+   * Converts to a StructuredRecord
    */
   public StructuredRecord toRecord() {
+    // initialize credential schema
+    List<Schema.Field> credentialSchemaList;
+    if (getCredentialSchema() == null) {
+      credentialSchemaList = new ArrayList<>();
+    } else {
+      credentialSchemaList = getCredentialSchema().getFields();
+    }
 
-    // initialize output schema
+    // merge default schema and credential schema to create output schema
     Schema outputSchema;
     List<Schema.Field> fieldList = new ArrayList<>(DEFAULT_SCHEMA.getFields());
-    fieldList.addAll(getCredentialSchema().getFields());
+    fieldList.addAll(credentialSchemaList);
     outputSchema = Schema.recordOf("metadata", fieldList);
 
     StructuredRecord.Builder outputBuilder = StructuredRecord.builder(outputSchema)
@@ -221,18 +244,26 @@ public abstract class AbstractFileMetadata implements Comparable {
       .set(MODIFICATION_TIME, modificationTime)
       .set(GROUP, group)
       .set(OWNER, owner)
-      .set(IS_FOLDER, isFolder)
+      .set(IS_DIR, isDir)
       .set(RELATIVE_PATH, relativePath)
       .set(PERMISSION, permission)
       .set(HOST_URI, hostURI);
-    addCredentialsToBuilder(outputBuilder);
+    addCredentialsToRecordBuilder(outputBuilder);
 
     return outputBuilder.build();
   }
 
+  /**
+   * Compares the size of two files
+   *
+   * @param o The other file to compare to
+   * @return 1 if this instance is larger than the other file.
+   *         0 if this instance has the same size as the other file.
+   *        -1 if this instance is smaller than the other file.
+   */
   @Override
   public int compareTo(Object o) {
-    return Long.compare(fileSize, ((AbstractFileMetadata) o).getFileSize());
+    return Long.compare(fileSize, ((FileMetadata) o).getFileSize());
   }
 
   public void write(DataOutput dataOutput) throws IOException {
@@ -242,16 +273,25 @@ public abstract class AbstractFileMetadata implements Comparable {
     dataOutput.writeUTF(getGroup());
     dataOutput.writeUTF(getOwner());
     dataOutput.writeLong(getFileSize());
-    dataOutput.writeBoolean(isFolder());
+    dataOutput.writeBoolean(isDir());
     dataOutput.writeUTF(getRelativePath());
     dataOutput.writeShort(getPermission());
     dataOutput.writeUTF(getHostURI());
   }
 
   /**
+   * Override this in extended class to return credential schema for different filesystems.
    * @return Credential schema for different filesystems
    */
-  protected abstract Schema getCredentialSchema();
+  protected Schema getCredentialSchema() {
+    return null;
+  }
 
-  protected abstract void addCredentialsToBuilder(StructuredRecord.Builder builder);
+  /**
+   * Override this in extended class to add credential information to StructuredRecord.
+   * @param builder
+   */
+  protected void addCredentialsToRecordBuilder(StructuredRecord.Builder builder) {
+    // no op
+  }
 }

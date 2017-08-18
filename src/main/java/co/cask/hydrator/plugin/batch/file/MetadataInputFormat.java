@@ -38,38 +38,78 @@ import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 
-
 /**
  * Abstract class that implements the inputFormat for the FileCopySource plugin to
  * read file metadata. The getsplit method creates splits according to user-set configuration
  * and tries to assign files to each split such that every split copies roughly the same number of bytes.
- * @param <KEY>
- * @param <VALUE>
  */
-public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputFormat<KEY, VALUE> {
+public class MetadataInputFormat extends InputFormat {
 
   protected static final String SOURCE_PATHS = "source.paths";
   protected static final String MAX_SPLIT_SIZE = "max.split.size";
   protected static final String FS_URI = "filesystem.uri";
   protected static final String RECURSIVE_COPY = "recursive.copy";
   protected static final int DEFAULT_MAX_SPLIT_SIZE = 128;
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractMetadataInputFormat.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MetadataInputFormat.class);
 
-  public AbstractMetadataInputFormat() {
+  public static void setSourcePaths(Configuration conf, String value) {
+    conf.set(SOURCE_PATHS, value);
   }
 
+  public static void setMaxSplitSize(Configuration conf, int value) {
+    conf.setInt(MAX_SPLIT_SIZE, value);
+  }
+
+  public static void setURI(Configuration conf, String value) {
+    conf.set(FS_URI, value);
+  }
+
+  public static void setRecursiveCopy(Configuration conf, String value) {
+    conf.set(RECURSIVE_COPY, value);
+  }
+
+  public MetadataInputFormat() {
+    // no op
+  }
+
+  @Override
+  public RecordReader createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext)
+    throws IOException, InterruptedException {
+    MetadataRecordReader recordReader = new MetadataRecordReader();
+    recordReader.initialize(inputSplit, taskAttemptContext);
+    return recordReader;
+  }
+
+  /**
+   * This method scans the files under the directories specified by the user. Splits are created given the total
+   * number of files and the number of files each split can contain. The files are then assigned to splits such that
+   * each split gets roughly the same number of bytes.
+   *
+   * @param jobContext Contains the configurations specified by the user.
+   * @return The list of splits.
+   * @throws IOException
+   * @throws InterruptedException
+   */
   @Override
   public List<InputSplit> getSplits(JobContext jobContext) throws IOException, InterruptedException {
     // connect to the source filesystem
     Configuration conf = jobContext.getConfiguration();
-    URI uri = URI.create(conf.get(FS_URI));
     String[] sourcePaths = conf.get(SOURCE_PATHS).split(",");
     boolean recursive = conf.getBoolean(RECURSIVE_COPY, true);
-    FileSystem fileSystem = FileSystem.get(uri, conf);
     int maxSplitSize = conf.getInt(MAX_SPLIT_SIZE, DEFAULT_MAX_SPLIT_SIZE);
 
+    // create Filesystem object
+    FileSystem fileSystem;
+    if (conf.get(FS_URI) != null) {
+      URI uri = URI.create(conf.get(FS_URI));
+      fileSystem = FileSystem.get(uri, conf);
+    } else {
+      // This case applies for local HDFS
+      fileSystem = FileSystem.get(conf);
+    }
+
     // scan the directories specified by the user
-    List<AbstractFileMetadata> fileMetaDataList = new ArrayList<>();
+    List<FileMetadata> fileMetaDataList = new ArrayList<>();
     for (String prefix : sourcePaths) {
       recursivelyAddFileStatus(fileMetaDataList, prefix, new Path(prefix), recursive, fileSystem, conf);
     }
@@ -81,16 +121,16 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
     // compute number of splits and instantiate the splits
     // We use a priority queue to keep track of the smallest split (fewest bytes assigned to it)
     int numSplits = (fileMetaDataList.size() - 1) / maxSplitSize + 1;
-    PriorityQueue<AbstractMetadataInputSplit> abstractInputSplits = new PriorityQueue<>(numSplits);
+    PriorityQueue<MetadataInputSplit> abstractInputSplits = new PriorityQueue<>(numSplits);
     for (int i = 0; i < numSplits; i++) {
       abstractInputSplits.add(getInputSplit());
     }
 
     // assign each split approximately the same number of bytes (2-approx)
     List<InputSplit> inputSplits = new ArrayList<>();
-    for (AbstractFileMetadata fileMetadata : fileMetaDataList) {
+    for (FileMetadata fileMetadata : fileMetaDataList) {
       // remove the smallest split from the priority queue and add a new file to it
-      AbstractMetadataInputSplit minInputSplit = abstractInputSplits.poll();
+      MetadataInputSplit minInputSplit = abstractInputSplits.poll();
       minInputSplit.addFileMetadata(fileMetadata);
 
       // if the inputsplit has number files more than maxSplitSize, we stop adding files to it
@@ -108,19 +148,11 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
     return inputSplits;
   }
 
-
-  @Override
-  public RecordReader createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext)
-    throws IOException, InterruptedException {
-    MetadataRecordReader recordReader = new MetadataRecordReader();
-    recordReader.initialize(inputSplit, taskAttemptContext);
-    return recordReader;
-  }
-
   /**
    * Because the existing Filesystem.listFiles(Path, Boolean) doesn't list empty directories, we
    * added our own method to recursively traverse the file directories. If the path doesn't exist
    * in the source filesystem, it logs a warning and skips the path.
+   *
    * @param fileMetadataList The list that contains all the files under fileStatus.getPath
    * @param prefix The user-set path that was used to get this group of files
    * @param path The path of the file that will be inserted into fileMetadataList.
@@ -129,7 +161,7 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
    * @param conf The configuration that contains credential information needed to connect to the filesystem.
    * @throws IOException
    */
-  private void recursivelyAddFileStatus(List<AbstractFileMetadata> fileMetadataList,
+  private void recursivelyAddFileStatus(List<FileMetadata> fileMetadataList,
                                          String prefix, Path path, Boolean recursive,
                                          FileSystem filesystem, Configuration conf) throws IOException {
     try {
@@ -147,24 +179,30 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
     }
   }
 
-  protected abstract AbstractMetadataInputSplit getInputSplit();
-
-  protected abstract AbstractFileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
-    throws IOException;
-
-  public static void setSourcePaths(Configuration conf, String value) {
-    conf.set(SOURCE_PATHS, value);
+  /**
+   * Returns an empty MetadataInputSplit instance. Override this method to return an InputSplit instance that works for
+   * your filesystem.
+   *
+   * @return An empty MetadataInputSplit instance.
+   */
+  protected MetadataInputSplit getInputSplit() {
+    return new MetadataInputSplit();
   }
 
-  public static void setMaxSplitSize(Configuration conf, int value) {
-    conf.setInt(MAX_SPLIT_SIZE, value);
-  }
-
-  public static void setURI(Configuration conf, String value) {
-    conf.set(FS_URI, value);
-  }
-
-  public static void setRecursiveCopy(Configuration conf, String value) {
-    conf.set(RECURSIVE_COPY, value);
+  /**
+   * Returns a FileMetadata given the FileStatus and soucePath. Override ths method to return a FileMetadata that
+   * contains additional credentials for your filesystem.
+   *
+   * @param fileStatus The FileStatus object that contains the raw metadata of the file
+   * @param sourcePath The source path specified by the user that was used to obtain this FileMetadata. Will be used to
+   *                   construct the relativePath field in FileMetadata.
+   * @param conf The user specified configuration that contains additional credentials required for accessing the source
+   *             filesystem.
+   * @return A FileMetadata instance with its metadata fields populated
+   * @throws IOException
+   */
+  protected FileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
+    throws IOException {
+    return new FileMetadata(fileStatus, sourcePath);
   }
 }

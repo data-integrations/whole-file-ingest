@@ -40,7 +40,7 @@ import java.util.Map;
  * The record writer that takes file metadata and streams data from source database
  * to destination database
  */
-public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFileMetadata> {
+public class FileCopyRecordWriter extends RecordWriter<NullWritable, FileMetadata> {
   private final FileSystem destFileSystem;
   private final String basePath;
   private final boolean enableOverwrite;
@@ -54,6 +54,12 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
   // a Key-Value map from host uri to Filesystem object
   private Map<String, FileSystem> sourceFilesystemMap;
 
+  /**
+   * Construct a RecordWriter given user configurations.
+   *
+   * @param conf The configuration that contains required information to intialize the recordWriter.
+   * @throws IOException
+   */
   public FileCopyRecordWriter(Configuration conf) throws IOException {
     // always disable caching when obtaining destination filesystem
     conf.set(String.format("fs.%s.impl.disable.cache", conf.get(FileCopyOutputFormat.FS_SCHEME)), String.valueOf(true));
@@ -74,8 +80,17 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     sourceFilesystemMap = new HashMap<>();
   }
 
+  /**
+   * This method connects to the source filesystem and copies the file specified by the FileMetadata input to the
+   * destination filesystem.
+   *
+   * @param key Unused key.
+   * @param fileMetadata Contains metadata for the file we wish to copy.
+   * @throws IOException
+   * @throws InterruptedException
+   */
   @Override
-  public void write(NullWritable key, AbstractFileMetadata fileMetadata) throws IOException, InterruptedException {
+  public void write(NullWritable key, FileMetadata fileMetadata) throws IOException, InterruptedException {
 
     if (fileMetadata.getRelativePath().isEmpty()) {
       // nothing to create
@@ -100,8 +115,8 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     FileSystem sourceFilesystem = sourceFilesystemMap.get(uriString);
 
     // do some checks to see if we need to copy the file
-    if (fileMetadata.isFolder()) {
-      // create an empty folder and return
+    if (fileMetadata.isDir()) {
+      // create an empty directory and return
       if (!destFileSystem.exists(destPath) && sourceFilesystem.isDirectory(srcPath)) {
         destFileSystem.mkdirs(destPath, permission);
         if (preserveOwner) {
@@ -152,6 +167,7 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
   /**
    * this method attempts to close every Filesystem object in the list, logs a warning
    * for each object that fails to close
+   *
    * @param fs The iterator over all the Filesystems we wish to close.
    */
   private void safelyCloseSourceFilesystems(Iterator<FileSystem> fs) {
@@ -164,7 +180,15 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     }
   }
 
-  private FileSystem getSourceFilesystemConnection(AbstractFileMetadata metadata)
+  /**
+   * This method identifies the source filesystem given FileMetadata and returns a FileSystem instance that will be used
+   * to read files from the source.
+   *
+   * @param metadata Contains the metadata of the file we wish to copy
+   * @return A FileSystem instance used to communicate with the source filesystem.
+   * @throws IOException
+   */
+  private FileSystem getSourceFilesystemConnection(FileMetadata metadata)
     throws IOException {
     Configuration conf = new Configuration(false);
     conf.clear();
@@ -186,6 +210,11 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
         S3MetadataInputFormat.setS3nAccessKeyId(conf, s3nFileMetadata.getAccessKeyId());
         S3MetadataInputFormat.setS3nSecretKeyId(conf, s3nFileMetadata.getSecretKeyId());
         S3MetadataInputFormat.setS3nFsClass(conf);
+        break;
+      case "file":
+      case "hdfs":
+        // TODO: figure out how to read from/write to remote HDFS. Currently this only supports writing to local HDFS.
+        conf = new Configuration();
         break;
       default:
         throw new IOException(uri.getScheme() + " is not supported.");

@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "S3 File Copy Source",
+      "label": "File Copy Source",
       "properties": [
         {
           "widget-type": "textbox",
@@ -12,9 +12,16 @@
           "name": "referenceName"
         },
         {
-          "widget-type": "textbox",
-          "label": "URI",
-          "name": "filesystemURI"
+          "widget-type": "select",
+          "label": "Scheme",
+          "name": "scheme",
+          "widget-attributes": {
+            "values": [
+              "hdfs",
+              "file"
+            ],
+            "default": "file"
+          }
         },
         {
           "widget-type": "csv",
@@ -37,16 +44,6 @@
             ],
             "default": "true"
           }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Access Key ID",
-          "name": "accessKeyId"
-        },
-        {
-          "widget-type": "password",
-          "label": "Secret Key ID",
-          "name": "secretKeyId"
         }
       ]
     }
@@ -96,14 +93,6 @@
           },
           {
             "name": "hostURI",
-            "type": "string"
-          },
-          {
-            "name": "accessKeyID",
-            "type": "string"
-          },
-          {
-            "name": "secretKeyID",
             "type": "string"
           }
         ]

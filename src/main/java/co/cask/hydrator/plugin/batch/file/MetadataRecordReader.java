@@ -25,12 +25,12 @@ import java.io.IOException;
 
 /**
  * Returns key that contains file path.
- * Returns value that contains file attributes.
+ * Returns value that contains file metadata.
  */
-public class MetadataRecordReader extends RecordReader<NullWritable, AbstractFileMetadata> {
+public class MetadataRecordReader extends RecordReader<NullWritable, FileMetadata> {
 
-  protected int currentIndex;
-  protected AbstractMetadataInputSplit split;
+  protected MetadataInputSplit split;
+  private int currentIndex;
 
   public MetadataRecordReader() {
     super();
@@ -60,15 +60,12 @@ public class MetadataRecordReader extends RecordReader<NullWritable, AbstractFil
   @Override
   public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext)
     throws IOException, InterruptedException {
-
-    // sorry I should think of a better way instead of casting
-    this.split = (AbstractMetadataInputSplit) inputSplit;
-
+    this.split = (MetadataInputSplit) inputSplit;
     this.currentIndex = -1;
   }
 
   @Override
-  public AbstractFileMetadata getCurrentValue() throws IOException, InterruptedException {
+  public FileMetadata getCurrentValue() throws IOException, InterruptedException {
     return split.getFileMetaDataList().get(currentIndex);
   }
 

@@ -14,7 +14,6 @@
  * the License.
  */
 
-
 package co.cask.hydrator.plugin.batch.file.s3;
 
 import co.cask.cdap.api.annotation.Description;
@@ -23,12 +22,14 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.batch.file.AbstractFileMetadataSource;
+import co.cask.hydrator.plugin.batch.file.FileMetadata;
 import co.cask.hydrator.plugin.common.JobUtils;
 import co.cask.hydrator.plugin.common.SourceInputFormatProvider;
 import org.apache.hadoop.conf.Configuration;
@@ -38,7 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * FileCopySource plugin that pulls filemetadata from S3 Filesystem.
@@ -56,36 +58,39 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    List<Schema.Field> fieldList = new ArrayList<>(FileMetadata.DEFAULT_SCHEMA.getFields());
+    fieldList.addAll(S3FileMetadata.CREDENTIAL_SCHEMA.getFields());
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.recordOf("S3Schema", fieldList));
+  }
+
+  @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
     super.prepareRun(context);
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
 
-    S3MetadataInputFormat.setSourcePaths(conf, config.sourcePaths);
-    S3MetadataInputFormat.setMaxSplitSize(conf, config.maxSplitSize);
-    S3MetadataInputFormat.setRecursiveCopy(conf, config.recursiveCopy.toString());
-    S3MetadataInputFormat.setRegion(conf, config.region);
+    // initialize configuration
+    setDefaultConf(conf);
     S3MetadataInputFormat.setURI(conf, config.filesystemURI);
-
     String fsScheme = URI.create(config.filesystemURI).getScheme();
-    if (fsScheme.equals("s3a")) {
-      S3MetadataInputFormat.setS3aAccessKeyId(conf, config.accessKeyId);
-      S3MetadataInputFormat.setS3aSecretKeyId(conf, config.secretKeyId);
-      S3MetadataInputFormat.setS3aFsClass(conf);
-    } else if (fsScheme.equals("s3n")) {
-      S3MetadataInputFormat.setS3nAccessKeyId(conf, config.accessKeyId);
-      S3MetadataInputFormat.setS3nSecretKeyId(conf, config.secretKeyId);
-      S3MetadataInputFormat.setS3nFsClass(conf);
-    } else {
-      throw new IllegalArgumentException("Scheme must be either s3a or s3n.");
+    switch (fsScheme) {
+      case "s3a" :
+        S3MetadataInputFormat.setS3aAccessKeyId(conf, config.accessKeyId);
+        S3MetadataInputFormat.setS3aSecretKeyId(conf, config.secretKeyId);
+        S3MetadataInputFormat.setS3aFsClass(conf);
+        break;
+      case "s3n" :
+        S3MetadataInputFormat.setS3nAccessKeyId(conf, config.accessKeyId);
+        S3MetadataInputFormat.setS3nSecretKeyId(conf, config.secretKeyId);
+        S3MetadataInputFormat.setS3nFsClass(conf);
+        break;
+      default:
+        throw new IllegalArgumentException("Scheme must be either s3a or s3n.");
     }
 
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(S3MetadataInputFormat.class, conf)));
-  }
-
-  @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
   }
 
   @Override
@@ -94,11 +99,15 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
   }
 
   /**
-   * AbstractCredentials required for connecting to S3Filesystem.
+   * Configurations required for connecting to S3Filesystem.
    */
   public class S3FileMetadataSourceConfig extends AbstractFileMetadataSourceConfig {
 
     // configurations for S3
+    @Macro
+    @Description("The URI of the filesystem")
+    public String filesystemURI;
+
     @Macro
     @Description("Your AWS Access Key Id")
     public String accessKeyId;
@@ -107,17 +116,13 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
     @Description("Your AWS Secret Key Id")
     public String secretKeyId;
 
-    @Macro
-    @Nullable
-    @Description("The AWS Region to operate in")
-    public String region;
-
-    public S3FileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize, String filesystemURI,
-                                      String accessKeyId, String secretKeyId, String region) {
-      super(name, sourcePaths, maxSplitSize, filesystemURI);
+    public S3FileMetadataSourceConfig(String name, String sourcePaths, Integer maxSplitSize,
+                                      String filesystemURI, String accessKeyId,
+                                      String secretKeyId) {
+      super(name, sourcePaths, maxSplitSize);
+      this.filesystemURI = filesystemURI;
       this.accessKeyId = accessKeyId;
       this.secretKeyId = secretKeyId;
-      this.region = region;
     }
 
     @Override

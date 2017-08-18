@@ -4,12 +4,17 @@
   },
   "configuration-groups": [
     {
-      "label": "HDFS File Copy Sink",
+      "label": "S3 File Copy Sink",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
           "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "URI",
+          "name": "filesystemURI"
         },
         {
           "widget-type": "textbox",
@@ -45,6 +50,16 @@
           "label": "Buffer Size (MB)",
           "name": "bufferSize",
           "default": "1"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Access Key ID",
+          "name": "accessKeyId"
+        },
+        {
+          "widget-type": "password",
+          "label": "Secret Key ID",
+          "name": "secretKeyId"
         }
       ]
     }
