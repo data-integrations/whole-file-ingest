@@ -1,5 +1,10 @@
 # Whole File ingest
 
+[![cm-available](https://cdap-users.herokuapp.com/assets/cm-available.svg)](https://docs.cask.co/cdap/current/en/integrations/cask-market.html)
+![cdap-batch-source](https://cdap-users.herokuapp.com/assets/cdap-batch-source.svg) ![cdap-batch-sink](https://cdap-users.herokuapp.com/assets/cdap-batch-sink.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Join CDAP community](https://cdap-users.herokuapp.com/badge.svg?t=wrangler)](https://cdap-users.herokuapp.com?t=1)
+
 
 Description
 -----------
