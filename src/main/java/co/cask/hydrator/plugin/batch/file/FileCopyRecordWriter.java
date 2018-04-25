@@ -100,7 +100,7 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, FileMetadat
     // construct file paths for source and destination
     Path srcPath = new Path(fileMetadata.getFullPath());
     Path destPath = new Path(basePath, fileMetadata.getRelativePath());
-    FsPermission permission = new FsPermission(fileMetadata.getPermission());
+    FsPermission permission = new FsPermission((short) fileMetadata.getPermission());
 
     // immediately return if we don't want to overwrite and file exists in destination
     if (!enableOverwrite && destFileSystem.exists(destPath)) {

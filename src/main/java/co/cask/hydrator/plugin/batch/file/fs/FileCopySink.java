@@ -24,13 +24,13 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.batch.file.AbstractFileCopySink;
 import co.cask.hydrator.plugin.batch.file.FileCopyOutputFormat;
-import com.sun.istack.Nullable;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import javax.annotation.Nullable;
 
 /**
  * FileCopySink that writes to local filesystem or local HDFS.
