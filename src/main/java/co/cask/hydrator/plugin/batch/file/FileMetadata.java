@@ -20,8 +20,6 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -55,7 +53,7 @@ public class FileMetadata implements Comparable {
     Schema.Field.of(FULL_PATH, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(FILE_SIZE, Schema.of(Schema.Type.LONG)),
     Schema.Field.of(MODIFICATION_TIME, Schema.of(Schema.Type.LONG)),
-    Schema.Field.of(GROUP, Schema.of(Schema.Type.LONG)),
+    Schema.Field.of(GROUP, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(OWNER, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(IS_DIR, Schema.of(Schema.Type.BOOLEAN)),
     Schema.Field.of(RELATIVE_PATH, Schema.of(Schema.Type.STRING)),
@@ -98,15 +96,13 @@ public class FileMetadata implements Comparable {
   private final String relativePath;
 
   // file permission, encoded in short
-  private final short permission;
+  private final int permission;
 
   /*
    * URI for the Filesystem
    * For instance, the hostURI for http://abc.def.ghi/new/index.html is http://abc.def.ghi
    */
   private final String hostURI;
-
-  private static final Logger LOG = LoggerFactory.getLogger(FileMetadata.class);
 
   /**
    * Constructs a FileMetadata instance given a FileStatus and source path. Override this method to add additional
@@ -175,7 +171,7 @@ public class FileMetadata implements Comparable {
     this.fileSize = dataInput.readLong();
     this.isDir = dataInput.readBoolean();
     this.relativePath = dataInput.readUTF();
-    this.permission = dataInput.readShort();
+    this.permission = dataInput.readInt();
     this.hostURI = dataInput.readUTF();
   }
 
@@ -211,7 +207,7 @@ public class FileMetadata implements Comparable {
     return relativePath;
   }
 
-  public short getPermission() {
+  public int getPermission() {
     return permission;
   }
 
@@ -275,7 +271,7 @@ public class FileMetadata implements Comparable {
     dataOutput.writeLong(getFileSize());
     dataOutput.writeBoolean(isDir());
     dataOutput.writeUTF(getRelativePath());
-    dataOutput.writeShort(getPermission());
+    dataOutput.writeInt(getPermission());
     dataOutput.writeUTF(getHostURI());
   }
 
