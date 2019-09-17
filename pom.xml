@@ -165,7 +165,7 @@
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
             <!--Only @Plugin classes in the export packages will be included as plugin-->
-            <_exportcontents>io.cdap.plugin.file.ingest.*,io.cdap.plugin.common.*,com.google.common.base.*</_exportcontents>
+            <_exportcontents>io.cdap.plugin.file.ingest.*</_exportcontents>
           </instructions>
         </configuration>
         <executions>
