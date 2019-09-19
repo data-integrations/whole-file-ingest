@@ -17,18 +17,16 @@
 package io.cdap.plugin.file.ingest.s3;
 
 import io.cdap.cdap.api.annotation.Description;
-import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.batch.Output;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.plugin.file.ingest.AbstractFileCopySink;
+import io.cdap.plugin.file.ingest.AbstractFileCopySinkConfig;
 import io.cdap.plugin.file.ingest.FileCopyOutputFormat;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
-
-import java.net.URI;
 
 /**
  * FileCopySink that writes to S3.
@@ -47,41 +45,8 @@ public class S3FileCopySink extends AbstractFileCopySink {
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    config.validate();
+    super.prepareRun(context);
     context.addOutput(Output.of(config.referenceName, new S3FileCopyOutputFormatProvider(config)));
-  }
-
-  /**
-   * Additional configurations for connecting to an S3 filesystem.
-   */
-  public class S3FileCopySinkConfig extends AbstractFileCopySinkConfig {
-
-    // configurations for S3
-    @Macro
-    @Description("The URI of the destination filesystem")
-    public String filesystemURI;
-
-    @Macro
-    @Description("Your AWS Access Key Id")
-    public String accessKeyId;
-
-    @Macro
-    @Description("Your AWS Secret Key Id")
-    public String secretKeyId;
-
-    public S3FileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
-                                Boolean preserveFileOwner, Integer bufferSize, String filesystemURI,
-                                String accessKeyId, String secretKeyId) {
-      super(name, basePath, enableOverwrite, preserveFileOwner, bufferSize);
-      this.filesystemURI = filesystemURI;
-      this.accessKeyId = accessKeyId;
-      this.secretKeyId = secretKeyId;
-    }
-
-    @Override
-    public String getScheme() {
-      return URI.create(filesystemURI).getScheme();
-    }
   }
 
   /**

@@ -16,17 +16,14 @@
 
 package io.cdap.plugin.file.ingest;
 
-import io.cdap.cdap.api.annotation.Description;
-import io.cdap.cdap.api.annotation.Macro;
-import io.cdap.cdap.api.data.batch.Output;
 import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.plugin.common.ReferenceBatchSink;
-import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.file.ingest.s3.S3FileMetadata;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
@@ -35,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Abstract template for a FileCopySink. The transform method converts a structured record
@@ -54,7 +50,9 @@ public abstract class AbstractFileCopySink
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
+    FailureCollector failureCollector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(failureCollector);
+    failureCollector.getOrThrowException();
   }
 
   /**
@@ -88,56 +86,9 @@ public abstract class AbstractFileCopySink
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    config.validate();
-    context.addOutput(Output.of(config.referenceName, new FileCopyOutputFormatProvider(config)));
-  }
-
-  /**
-   * Abstract class for the configuration of FileCopySink
-   */
-  public abstract class AbstractFileCopySinkConfig extends ReferencePluginConfig {
-
-    @Macro
-    @Description("The destination path. Will be created if it doesn't exist.")
-    public String basePath;
-
-    @Description("Whether or not to overwrite if the file already exists.")
-    public Boolean enableOverwrite;
-
-    @Description("Whether or not to preserve the owner of the file from source filesystem.")
-    public Boolean preserveFileOwner;
-
-    @Macro
-    @Nullable
-    @Description("The size of the buffer (in MB) that temporarily stores data from file input stream. Defaults to" +
-      " 1 MB")
-    public Integer bufferSize;
-
-    public AbstractFileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
-                                      Boolean preserveFileOwner, @Nullable Integer bufferSize) {
-      super(name);
-      this.basePath = basePath;
-      this.enableOverwrite = enableOverwrite;
-      this.preserveFileOwner = preserveFileOwner;
-      this.bufferSize = bufferSize;
-    }
-
-    public void validate() {
-      if (!this.containsMacro("bufferSize")) {
-        // check if it's null since buffersize isn't a required field
-        if (bufferSize != null) {
-          if (bufferSize <= 0) {
-            throw new IllegalArgumentException("Buffer size must be a positive integer.");
-          }
-        }
-      }
-    }
-
-    /*
-     * Additional configurations for the file sink should be implemented in the extended class
-     */
-
-    public abstract String getScheme();
+    FailureCollector failureCollector = context.getFailureCollector();
+    config.validate(failureCollector);
+    failureCollector.getOrThrowException();
   }
 
   /**
@@ -146,7 +97,7 @@ public abstract class AbstractFileCopySink
   public class FileCopyOutputFormatProvider implements OutputFormatProvider {
     protected final Map<String, String> conf;
 
-    public FileCopyOutputFormatProvider(AbstractFileCopySink.AbstractFileCopySinkConfig config) {
+    public FileCopyOutputFormatProvider(AbstractFileCopySinkConfig config) {
       this.conf = new HashMap<>();
       FileCopyOutputFormat.setBasePath(conf, config.basePath);
       FileCopyOutputFormat.setEnableOverwrite(conf, config.enableOverwrite.toString());
