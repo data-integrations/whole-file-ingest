@@ -23,6 +23,7 @@ import io.cdap.cdap.api.data.batch.Output;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.plugin.file.ingest.AbstractFileCopySink;
+import io.cdap.plugin.file.ingest.AbstractFileCopySinkConfig;
 import io.cdap.plugin.file.ingest.FileCopyOutputFormat;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import javax.annotation.Nullable;
 
 /**
  * FileCopySink that writes to local filesystem or local HDFS.
@@ -50,28 +50,8 @@ public class FileCopySink extends AbstractFileCopySink {
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    config.validate();
+    super.prepareRun(context);
     context.addOutput(Output.of(config.referenceName, new FileCopyOutputFormatProvider(config)));
-  }
-
-  /**
-   * Configurations required for connecting to HDFS.
-   */
-  public class FileCopySinkConfig extends AbstractFileCopySinkConfig {
-
-    @Description("Scheme of the destination filesystem.")
-    public String scheme;
-
-    public FileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
-                              Boolean preserveFileOwner, @Nullable Integer bufferSize, String scheme) {
-      super(name, basePath, enableOverwrite, preserveFileOwner, bufferSize);
-      this.scheme = scheme;
-    }
-
-    @Override
-    public String getScheme() {
-      return scheme;
-    }
   }
 
   /**
